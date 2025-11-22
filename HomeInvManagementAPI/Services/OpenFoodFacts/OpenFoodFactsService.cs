@@ -14,7 +14,5 @@ namespace HomeInvManagementAPI.Services.OpenFoodFacts
             _logger = logger;
             _configuration = configuration;
         }
-
-        public async Task 
     }
 }
