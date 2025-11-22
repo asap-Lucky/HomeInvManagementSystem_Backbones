@@ -1,20 +1,31 @@
+using HomeInvManagementAPI.Interfaces;
+using HomeInvManagementAPI.Services;
+using HomeInvManagementAPI.Services.OpenFoodFacts;
+using HomeInvManagementAPI.Interfaces.OpenFoodFacts;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Transcient
+builder.Services.AddTransient<IProductAggregatorService, ProductAggregatorService>();
+builder.Services.AddTransient<IOpenFoodFactsService, OpenFoodFactsService>();
+
+// Scoped
+
+// Singleton
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
+    app.MapGet("/", () => Results.Redirect("/swagger"));
 }
-
-app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
