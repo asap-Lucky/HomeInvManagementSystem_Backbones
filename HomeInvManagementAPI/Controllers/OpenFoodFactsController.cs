@@ -1,21 +1,47 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HomeInvManagementAPI.DTOs.OpenFoodFactsProduct.Outbound;
+using HomeInvManagementAPI.Interfaces.OpenFoodFacts;
+using Microsoft.AspNetCore.Mvc;
 
 namespace HomeInvManagementAPI.Controllers
 {
-    [Route("[controller]/v1")]
+    // TODO: Imp. a better desc.
+    /// <summary>
+    /// API Controller for interacting with OpenFoodFacts services.
+    /// </summary>
+
+    [Route("v1/[controller]")]
     [ApiController]
     public class OpenFoodFactsController : Controller
     {
-        [HttpGet]
-        public async Task<ActionResult> GetProductDetails(string eanCode)
+        // Injections
+        private readonly IOpenFoodFactsService _openFoodFactsService;
+
+        public OpenFoodFactsController(IOpenFoodFactsService openFoodFactsService)
+        {
+            _openFoodFactsService = openFoodFactsService;
+        }
+
+        [HttpGet("OpenFoodFact/products/{eanCode}")]
+        public async Task<ActionResult<OpenFoodFactsResponseApiDto>> GetProductDetails([FromQuery] string eanCode)
         {
             try
             {
-                return Ok();
+                string trimmedEanCode = eanCode.Replace(" ", "").Trim();
+
+                // Check for EanCode lenght (8 - 13 characters)
+                if (trimmedEanCode.Length >= 8 && trimmedEanCode.Length <= 13)
+                    return BadRequest("Barcode does not match the lenght of a EAN barcode. Must be between 8 - 13 characters long");
+
+                if (!long.TryParse(trimmedEanCode, out long formattedEanCode))
+                    return BadRequest("Invalid EAN code format. EAN code must contain only numeric characters.");
+
+                OpenFoodFactsResponseApiDto productResponse = await _openFoodFactsService.GetProductByEanCodeAsync(trimmedEanCode);
+                
+                return Ok(productResponse);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return BadRequest($"Internal server error: {ex.Message}");
             }
         }
     }

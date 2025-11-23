@@ -2,7 +2,6 @@
 
 namespace HomeInvManagementAPI.Controllers
 {
-    [Route("[controller]/v1")]
     [ApiController]
     public class UnifiedProductService : Controller
     {
