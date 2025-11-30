@@ -1,50 +1,41 @@
-using HomeInvManagementAPI.Interfaces;
+using HomeInvManagementAPI.DI;
+using HomeInvManagementAPI.Interfaces.Repositories;
+using HomeInvManagementAPI.Interfaces.Services;
 using HomeInvManagementAPI.Services;
-using HomeInvManagementAPI.Services.OpenFoodFacts;
-using HomeInvManagementAPI.Interfaces.OpenFoodFacts;
-using System.Reflection;
 
-try
+var builder = WebApplication.CreateBuilder(args);
+
+// Service injection
+builder.Services.AddControllers();
+builder.Services.AddOpenApi();
+
+builder.Services.AddTransient<IProductAggregatorService, ProductAggregatorService>();
+builder.Services.AddTransient<IOpenFoodFactsService, OpenFoodFactsService>();
+
+builder.Services.AddInfrastructure(options =>
 {
-    var builder = WebApplication.CreateBuilder(args);
+    options.OFFApiUrl = builder.Configuration["ExternalApis:OpenFoodFactsUrl"];
+    options.OFFAuthToken = builder.Configuration["Credentials:OpenFoodFactsAuthCredentials"];
+});
 
-    // Service injection
-    builder.Services.AddControllers();
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+var app = builder.Build();
 
-    builder.Services.AddHttpClient<IProductAggregatorService, ProductAggregatorService>();
-    builder.Services.AddHttpClient<IOpenFoodFactsService, OpenFoodFactsService>();
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
 
-    var app = builder.Build();
-
-    // Configure the HTTP request pipeline.
-    if (app.Environment.IsDevelopment())
+    // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.)
+    app.UseSwaggerUI(options =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-        app.UseSwaggerUI(options =>
-        {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
-            options.RoutePrefix = string.Empty;
-        });
-    }
-
-    app.UseAuthorization();
-
-    app.MapControllers();
-
-    app.Run();
+        options.SwaggerEndpoint("/openapi/v1.json", "api");
+    });
 }
-catch (ReflectionTypeLoadException ex)
-{
-    foreach (var loaderException in ex.LoaderExceptions)
-    {
-        Console.WriteLine(loaderException.Message);
-    }
-    throw;
-}
-catch (Exception ex)
-{
-    
-}
+
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();

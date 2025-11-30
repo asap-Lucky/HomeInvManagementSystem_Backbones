@@ -1,6 +1,0 @@
-@HomeInvManagementAPI_HostAddress = http://localhost:5177
-
-GET {{HomeInvManagementAPI_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
