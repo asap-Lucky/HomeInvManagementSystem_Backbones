@@ -4,10 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Application.Interfaces.Commands
+namespace Domain.Enums
 {
-    public interface IOpenFoodFactsCommand
+    public enum SourceDestination
     {
-
+        OFF,
+        DB,
+        Auto
     }
 }

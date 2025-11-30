@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Application.Commands
+namespace Application.Interfaces.Commands
 {
-    internal class ProductAggregateCommand
+    public interface IInventoryCommand
     {
+
     }
 }

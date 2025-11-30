@@ -2,6 +2,7 @@
 using Application.Interfaces.Commands;
 using Application.Interfaces.Queries;
 using Domain.Enums;
+using HomeInvManagementAPI.DTOs.Request;
 using HomeInvManagementAPI.Mappers;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
@@ -15,33 +16,33 @@ namespace HomeInvManagementAPI.Controllers
     public class HomeInvController : Controller
     {
         // Injections
-        private readonly IProductAggregateCommand _productAggregateCommand;
+        private readonly IInventoryCommand _productAggregateCommand;
 
         private readonly IProductAggregateQuery _productAggregateQuery;
         private readonly ILogger<HomeInvController> _logger;
 
-        public HomeInvController(IProductAggregateQuery productAggregateQuery, IProductAggregateCommand productAggregateCommand, ILogger<HomeInvController> logger)
+        public HomeInvController(IProductAggregateQuery productAggregateQuery, IInventoryCommand productAggregateCommand, ILogger<HomeInvController> logger)
         {
             _productAggregateCommand = productAggregateCommand;
             _productAggregateQuery = productAggregateQuery;
             _logger = logger;
         }
 
-        [HttpGet("products/{location}/{id}")]
-        public async Task<ActionResult<ProductAggregateDTO>> GetProductDetailsByEanAsync([FromRoute] string eanCode, [FromQuery] SourceDestinations source = SourceDestinations.Auto)
+        [HttpGet("products/{location}/{eancode}")]
+        public async Task<ActionResult<ProductAggregateDTO>> GetProductDetailsByEanAsync([FromRoute] ProductLocation location, [FromRoute] string eancode, [FromQuery] SourceDestination source = SourceDestination.Auto)
         {
             try
             {
-                string trimmedEanCode = eanCode.Replace(" ", "").Trim();
+                string trimmedEanCode = eancode.Replace(" ", "").Trim();
 
                 // Check for EanCode lenght (8 - 13 characters)
                 if (trimmedEanCode.Length < 8 || trimmedEanCode.Length > 13)
                     return BadRequest("Barcode does not match the lenght of a EAN barcode. Must be between 8 - 13 characters long");
 
-                if (!long.TryParse(trimmedEanCode, out long formattedEanCode))
+                if (!trimmedEanCode.All(char.IsDigit))
                     return BadRequest("Invalid EAN code format. EAN code must contain only numeric characters.");
 
-                ProductAggregateDTO productResponse = await _productAggregateQuery.GetProductByEanAsync(trimmedEanCode, source);
+                ProductAggregateDTO productResponse = await _productAggregateQuery.GetProductByEanAsync(trimmedEanCode, source, location);
 
                 return Ok(productResponse);
             }
@@ -65,23 +66,13 @@ namespace HomeInvManagementAPI.Controllers
             }
         }
 
-        [HttpPost("inventory/{location}")]
-        public async Task<ActionResult<ProductAggregateDTO>> CreateInventoryItemAsync()
+        [HttpPost("inventory")]                                             
+        public async Task<ActionResult> CreateInventoryItemAsync([FromBody] CreateProductRequest productRequest)
         {
             try
             {
-                string trimmedEanCode = eanCode.Replace(" ", "").Trim();
-
-                // Check for EanCode lenght (8 - 13 characters)
-                if (trimmedEanCode.Length < 8 || trimmedEanCode.Length > 13)
-                    return BadRequest("Barcode does not match the lenght of a EAN barcode. Must be between 8 - 13 characters long");
-
-                if (!long.TryParse(trimmedEanCode, out long formattedEanCode))
-                    return BadRequest("Invalid EAN code format. EAN code must contain only numeric characters.");
-
-                ProductAggregateDTO productResponse = await _productAggregatorService.GetProductByEanAsync(trimmedEanCode);
-
-                return Ok(productResponse);
+                // Are we sure we dont mix request/response and command/dto here? Try to figure out if cleaner way exists.
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -94,18 +85,8 @@ namespace HomeInvManagementAPI.Controllers
         {
             try
             {
-                string trimmedEanCode = eanCode.Replace(" ", "").Trim();
-
-                // Check for EanCode lenght (8 - 13 characters)
-                if (trimmedEanCode.Length < 8 || trimmedEanCode.Length > 13)
-                    return BadRequest("Barcode does not match the lenght of a EAN barcode. Must be between 8 - 13 characters long");
-
-                if (!long.TryParse(trimmedEanCode, out long formattedEanCode))
-                    return BadRequest("Invalid EAN code format. EAN code must contain only numeric characters.");
-
-                ProductAggregateDTO productResponse = await _productAggregatorService.GetProductByEanAsync(trimmedEanCode);
-
-                return Ok(productResponse);
+                // NOTE: This will hit the Stored Procedure for getting all the products in the database. Since its a big query to handle otherwise.
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -118,23 +99,15 @@ namespace HomeInvManagementAPI.Controllers
         {
             try
             {
-                string trimmedEanCode = eanCode.Replace(" ", "").Trim();
-
-                // Check for EanCode lenght (8 - 13 characters)
-                if (trimmedEanCode.Length < 8 || trimmedEanCode.Length > 13)
-                    return BadRequest("Barcode does not match the lenght of a EAN barcode. Must be between 8 - 13 characters long");
-
-                if (!long.TryParse(trimmedEanCode, out long formattedEanCode))
-                    return BadRequest("Invalid EAN code format. EAN code must contain only numeric characters.");
-
-                ProductAggregateDTO productResponse = await _productAggregatorService.GetProductByEanAsync(trimmedEanCode);
-
-                return Ok(productResponse);
+                // NOTE: This will hit the Stored Procedure for getting all the products in the database. Since its a big query to handle otherwise.
+                return Ok();
             }
             catch (Exception ex)
             {
                 return BadRequest($"Internal server error: {ex.Message}");
             }
         }
+
+        // BULK OPERATIONS (Using Stored procedures)
     }
 }

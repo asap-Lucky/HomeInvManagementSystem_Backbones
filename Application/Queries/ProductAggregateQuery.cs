@@ -19,23 +19,23 @@ namespace Application.Queries
             _openFoodFactsQuery = openFoodFactsService;
         }
 
-        public async Task<ProductAggregateDTO> GetProductByEanAsync(string ean, SourceDestinations source)
+        public async Task<ProductAggregateDTO> GetProductByEanAsync(string ean, SourceDestination source, ProductLocation location)
         {
             try
             {
-                if (source == SourceDestinations.OFF)
+                if (source == SourceDestination.OFF)
                 {
                     var productFromOFF = await _openFoodFactsQuery.GetProductByEanAsync(ean);
                     return productFromOFF;
                 }
 
-                if (source == SourceDestinations.Auto)
+                if (source == SourceDestination.Auto)
                 {
                     Exception exception = new Exception("Auto not yet implemented.");
                     throw exception;
                 }
 
-                if (source == SourceDestinations.DB)
+                if (source == SourceDestination.DB)
                 {
                     Exception exception = new Exception("DB not yet implemented.");
                     throw exception;

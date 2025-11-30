@@ -1,6 +1,4 @@
-﻿using HomeInvManagementAPI.Enums;
-
-namespace Application.DTOs.Outbound
+﻿namespace Application.DTOs.Outbound
 {
     // Idea for a generic product DTO that will be mapped from various external product APIs.
     public class ProductAggregateDTO
