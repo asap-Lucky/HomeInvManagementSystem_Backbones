@@ -1,19 +1,18 @@
 ﻿using Application.Interfaces.Queries;
 using Microsoft.Extensions.Logging;
 using Domain.Enums;
-
-using Application.DTOs.Outbound;
 using System.Reflection.Metadata.Ecma335;
+using Application.DTOs.Outbound;
 
 namespace Application.Queries
 {
-    public class ProductAggregateQuery : IProductAggregateQuery
+    public class InventoryQuery : IInventoryQuery
     {
         // Injections
-        private readonly ILogger<ProductAggregateQuery> _logger;
+        private readonly ILogger<InventoryQuery> _logger;
         private readonly IOpenFoodFactsQuery _openFoodFactsQuery;
 
-        public ProductAggregateQuery(ILogger<ProductAggregateQuery> logger, IOpenFoodFactsQuery openFoodFactsService)
+        public InventoryQuery(ILogger<InventoryQuery> logger, IOpenFoodFactsQuery openFoodFactsService)
         {
             _logger = logger;
             _openFoodFactsQuery = openFoodFactsService;
@@ -27,6 +26,12 @@ namespace Application.Queries
                 {
                     var productFromOFF = await _openFoodFactsQuery.GetProductByEanAsync(ean);
                     return productFromOFF;
+                }
+
+                if (source == SourceDestination.BTG)
+                {
+                    Exception exception = new Exception("BTG not yet implemented.");
+                    throw exception;
                 }
 
                 if (source == SourceDestination.Auto)

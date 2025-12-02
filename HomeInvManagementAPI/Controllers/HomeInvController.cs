@@ -1,7 +1,9 @@
-﻿using Application.DTOs.Outbound;
+﻿using Application.DTOs.Inbound;
+using Application.DTOs.Outbound;
 using Application.Interfaces.Commands;
 using Application.Interfaces.Queries;
 using Domain.Enums;
+using Domain.Wrapper;
 using HomeInvManagementAPI.DTOs.Request;
 using HomeInvManagementAPI.Mappers;
 using Microsoft.AspNetCore.Mvc;
@@ -18,10 +20,10 @@ namespace HomeInvManagementAPI.Controllers
         // Injections
         private readonly IInventoryCommand _productAggregateCommand;
 
-        private readonly IProductAggregateQuery _productAggregateQuery;
+        private readonly IInventoryQuery _productAggregateQuery;
         private readonly ILogger<HomeInvController> _logger;
 
-        public HomeInvController(IProductAggregateQuery productAggregateQuery, IInventoryCommand productAggregateCommand, ILogger<HomeInvController> logger)
+        public HomeInvController(IInventoryQuery productAggregateQuery, IInventoryCommand productAggregateCommand, ILogger<HomeInvController> logger)
         {
             _productAggregateCommand = productAggregateCommand;
             _productAggregateQuery = productAggregateQuery;
@@ -71,8 +73,34 @@ namespace HomeInvManagementAPI.Controllers
         {
             try
             {
-                // Are we sure we dont mix request/response and command/dto here? Try to figure out if cleaner way exists.
-                return Ok();
+                // TODO: Imp base request wrapper later to set some values that are needed later.
+                //BaseRequestWrapper<CreateProductRequest> requestWrapper = new()
+                //{
+                //};
+
+                CreateProductOutDTO createItemDTO = new()
+                {
+                    ProductName = productRequest.ProductName,
+                    Category = (int)productRequest.Category,
+                    Locations = productRequest.Locations
+                                              .Select(location => (int)location)
+                                              .ToList(),
+                    EANCode = productRequest.EANCode,
+                    Brand = productRequest.Brand,
+                    ExpirationDate = productRequest.ExpirationDate?.ToString("dd-MM-yyyy:HHmmss"),
+                    CountriesOfOrigin = productRequest.CountriesOfOrigin,
+                    Suppliers = productRequest.Suppliers,
+                    ImageBLOB = productRequest.ImageBLOB,
+                    Tags = productRequest.Tags
+
+                };
+
+                CreateProductInDTO addedItemDTO = await _productAggregateCommand.AddProductToInventoryAsync(createItemDTO);
+
+                if (addedItemDTO == null)
+                    return new StatusCodeResult(StatusCodes.Status422UnprocessableEntity);
+
+                return new StatusCodeResult(StatusCodes.Status201Created);
             }
             catch (Exception ex)
             {

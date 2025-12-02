@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Application.Interfaces.Queries
 {
-    public interface IProductAggregateQuery
+    public interface IInventoryQuery
     {
         public Task<ProductAggregateDTO> GetProductByEanAsync(string ean, SourceDestination source, ProductLocation location);
     }

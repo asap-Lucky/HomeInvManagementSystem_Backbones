@@ -1,7 +1,10 @@
+using Application.Commands;
+using Application.Interfaces.Commands;
+using Application.Interfaces.Queries;
+using Application.Interfaces.Repositories;
+using Application.Queries;
 using HomeInvManagementAPI.DI;
-using HomeInvManagementAPI.Interfaces.Repositories;
-using HomeInvManagementAPI.Interfaces.Services;
-using HomeInvManagementAPI.Services;
+using Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,8 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-builder.Services.AddTransient<IProductAggregatorService, ProductAggregatorService>();
-builder.Services.AddTransient<IOpenFoodFactsService, OpenFoodFactsService>();
+builder.Services.AddTransient<IInventoryCommand, InventoryCommand>();
+builder.Services.AddTransient<IInventoryQuery, InventoryQuery>();
+builder.Services.AddTransient<IOpenFoodFactsQuery, OpenFoodFactsQuery>();
+builder.Services.AddTransient<IInventoryManagementRepository, InventoryManagementRepository>();
 
 builder.Services.AddInfrastructure(options =>
 {

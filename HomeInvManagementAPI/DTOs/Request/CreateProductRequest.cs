@@ -12,7 +12,7 @@ namespace HomeInvManagementAPI.DTOs.Request
         public DateTime? ExpirationDate { get; set; }
         public List<string>? CountriesOfOrigin { get; set; }
         public List<string>? Suppliers { get; set; }
-        public string? ImageBLOB { get; set; }
+        public string? ImageBLOB { get; set; }  
         public List<string>? Tags { get; set; }
     }
 }

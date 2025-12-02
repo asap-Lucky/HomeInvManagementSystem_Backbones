@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Application.DTOs.Inbound;
+using Application.DTOs.Outbound;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +10,6 @@ namespace Application.Interfaces.Commands
 {
     public interface IInventoryCommand
     {
-
+        public Task<CreateProductInDTO> AddProductToInventoryAsync(CreateProductOutDTO createOutDTO);
     }
 }

@@ -1,4 +1,6 @@
-﻿using Application.Interfaces.Commands;
+﻿using Application.DTOs.Inbound;
+using Application.DTOs.Outbound;
+using Application.Interfaces.Commands;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Commands
@@ -13,7 +15,7 @@ namespace Application.Commands
             _logger = logger;
         }
 
-        public Task AddProductToInventoryAsync(string eanCode)
+        public async Task<CreateProductInDTO> AddProductToInventoryAsync(CreateProductOutDTO createOutDTO)
         {
             try
             {

@@ -18,7 +18,7 @@ namespace Application.Queries
             _logger = logger;
             _openFoodFactsRepository = openFoodFactsRepository;
         }
-
+    
         public async Task<ProductAggregateDTO>? GetProductByEanAsync(string eanCode)
         {
             try

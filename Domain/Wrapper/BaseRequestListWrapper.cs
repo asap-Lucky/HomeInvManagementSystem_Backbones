@@ -4,13 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Domain.Enums
+namespace Domain.Wrapper
 {
-    public enum SourceDestination
+    public class BaseRequestListWrapper
     {
-        OFF,
-        BTG,
-        DB,
-        Auto
+
     }
 }
