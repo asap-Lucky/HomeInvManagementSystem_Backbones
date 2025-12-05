@@ -1,4 +1,6 @@
-﻿using HomeInvManagementAPI.Interfaces.Repositories;
+﻿using Application.Commands;
+using Application.Interfaces.Commands;
+using HomeInvManagementAPI.Interfaces.Repositories;
 using HomeInvManagementAPI.Repositories;
 using Infrastructure.Configuration;
 using Microsoft.AspNetCore.Authentication;
@@ -22,6 +24,8 @@ namespace HomeInvManagementAPI.DI
             {
                 var options = sp.GetRequiredService<HomeInvOptions>();
             });
+
+            services.AddTransient<IInventoryCommand, InventoryCommand>();
 
             return services;
         }

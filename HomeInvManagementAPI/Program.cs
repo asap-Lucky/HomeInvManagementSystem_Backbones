@@ -4,7 +4,10 @@ using Application.Interfaces.Queries;
 using Application.Interfaces.Repositories;
 using Application.Queries;
 using HomeInvManagementAPI.DI;
+using Infrastructure.Data;
+using Infrastructure.Persistence;
 using Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,8 +18,16 @@ builder.Services.AddOpenApi();
 builder.Services.AddTransient<IInventoryCommand, InventoryCommand>();
 builder.Services.AddTransient<IInventoryQuery, InventoryQuery>();
 builder.Services.AddTransient<IOpenFoodFactsQuery, OpenFoodFactsQuery>();
-builder.Services.AddTransient<IInventoryManagementRepository, InventoryManagementRepository>();
 
+var homeInvConnectionString = builder.Configuration["ConnectionStrings:HomeInvConnectionString"];
+var homeInvServerVersion = new MySqlServerVersion(new Version(8, 0, 44));
+
+builder.Services.AddDbContext<HomeinvsystemContext>(optionsBuilder => optionsBuilder
+                .UseMySql(homeInvConnectionString, homeInvServerVersion)
+                .LogTo(Console.WriteLine, LogLevel.Information)
+                .EnableSensitiveDataLogging()
+                .EnableDetailedErrors());
+    
 builder.Services.AddInfrastructure(options =>
 {
     options.OFFApiUrl = builder.Configuration["ExternalApis:OpenFoodFactsUrl"];

@@ -15,3 +15,4 @@ namespace Infrastructure.Configuration
         public string? OFFAuthToken { get; set; }
     }
 }
+    
