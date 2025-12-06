@@ -11,6 +11,8 @@ public partial class ProductLocation
 
     public int Amount { get; set; }
 
+    public DateTime? UpdatedAt { get; set; }
+
     public virtual Location Location { get; set; } = null!;
 
     public virtual Product Product { get; set; } = null!;

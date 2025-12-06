@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Infrastructure.Models.HomeInv;
 using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
-using Type = Infrastructure.Models.HomeInv.Type;
 
 namespace Infrastructure.Data;
 
@@ -24,6 +23,8 @@ public partial class HomeinvsystemContext : DbContext
 
     public virtual DbSet<Image> Images { get; set; }
 
+    public virtual DbSet<Itemtype> Itemtypes { get; set; }
+
     public virtual DbSet<Location> Locations { get; set; }
 
     public virtual DbSet<Product> Products { get; set; }
@@ -33,8 +34,6 @@ public partial class HomeinvsystemContext : DbContext
     public virtual DbSet<Supplier> Suppliers { get; set; }
 
     public virtual DbSet<Tag> Tags { get; set; }
-
-    public virtual DbSet<Type> Types { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseMySql("name=ConnectionStrings:HomeInvConnectionString", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.44-mysql"));
@@ -90,6 +89,28 @@ public partial class HomeinvsystemContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<Itemtype>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.ToTable("itemtype");
+
+            entity.HasIndex(e => e.CategoryId, "FK_type_category");
+
+            entity.HasIndex(e => e.Name, "name").IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.Name)
+                .HasMaxLength(50)
+                .HasColumnName("name");
+
+            entity.HasOne(d => d.Category).WithMany(p => p.Itemtypes)
+                .HasForeignKey(d => d.CategoryId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_type_category");
         });
 
         modelBuilder.Entity<Location>(entity =>
@@ -228,6 +249,11 @@ public partial class HomeinvsystemContext : DbContext
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.LocationId).HasColumnName("location_id");
             entity.Property(e => e.Amount).HasColumnName("amount");
+            entity.Property(e => e.UpdatedAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Location).WithMany(p => p.ProductLocations)
                 .HasForeignKey(d => d.LocationId)
@@ -264,28 +290,6 @@ public partial class HomeinvsystemContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(25)
                 .HasColumnName("name");
-        });
-
-        modelBuilder.Entity<Type>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PRIMARY");
-
-            entity.ToTable("type");
-
-            entity.HasIndex(e => e.CategoryId, "FK_type_category");
-
-            entity.HasIndex(e => e.Name, "name").IsUnique();
-
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CategoryId).HasColumnName("category_id");
-            entity.Property(e => e.Name)
-                .HasMaxLength(50)
-                .HasColumnName("name");
-
-            entity.HasOne(d => d.Category).WithMany(p => p.Types)
-                .HasForeignKey(d => d.CategoryId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_type_category");
         });
 
         OnModelCreatingPartial(modelBuilder);

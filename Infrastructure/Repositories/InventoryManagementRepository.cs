@@ -25,11 +25,14 @@ namespace Infrastructure.Repositories
             _context = context;
         }
 
+        public async Task<>
+
         public async Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createInDTO)
         {
             try
             {
-                var product = _context.Products.Add(new Models.HomeInv.Product
+                // Create Primary values in the table.
+                var product = new Models.HomeInv.Product
                 {
                     Name = createInDTO.ProductName,
                     CategoryId = createInDTO.Category,
@@ -38,11 +41,74 @@ namespace Infrastructure.Repositories
                     ExpiresAt = createInDTO.ExpirationDate,
                     Image = createInDTO.ImageBLOB != null ? new Models.HomeInv.Image
                     {
-                        Data = Encoding.UTF8.GetBytes(createInDTO.ImageBLOB)                   
+                        Data = Encoding.UTF8.GetBytes(createInDTO.ImageBLOB)
                     } : null
-                });
+                };
 
-                var entry = _context.Products.Add(product.Entity);
+                var entry = _context.Products.Add(product);
+                await _context.SaveChangesAsync();
+
+                // Populate Junction tables 
+                if (createInDTO.Locations != null)
+                {
+                    foreach (var locationId in createInDTO.Locations)
+                    {
+                        // Updating the count of the ammount in a location.
+                        var existingEntry = await _context.ProductLocations
+                            .FirstOrDefaultAsync(pl => pl.LocationId == locationId && pl.ProductId == product.Id);
+
+                        if (existingEntry == null)
+                        {
+                            // Initial creation of none existing entry in DB.
+                            _context.ProductLocations.Add(new Models.HomeInv.ProductLocation
+                            {
+                                ProductId = product.Id,
+                                LocationId = locationId,
+                                Amount = 1,
+                                UpdatedAt = DateTime.UtcNow
+                            });
+                        }
+                        else
+                        {
+                            existingEntry.Amount += 1;
+                            existingEntry.UpdatedAt = DateTime.UtcNow;
+                        }
+                    }
+                }
+
+                if (createInDTO.CountriesOfOrigin != null)
+                {
+                    foreach (var countryName in createInDTO.CountriesOfOrigin)
+                    {
+                        product.Countries.Add(new Models.HomeInv.Country
+                        {
+                            Name = countryName
+                        });
+                    }
+                }
+
+                if (createInDTO.Suppliers != null)
+                {
+                    foreach (var supplierName in createInDTO.Suppliers)
+                    {
+                        product.Suppliers.Add(new Models.HomeInv.Supplier
+                        {
+                            Name = supplierName
+                        });
+                    }
+                }
+
+                if (createInDTO.Tags != null)
+                {
+                    foreach (var tagName in createInDTO.Tags)
+                    {
+                        product.Tags.Add(new Models.HomeInv.Tag
+                        {
+                            Name = tagName
+                        });
+                    }
+                }
+
                 await _context.SaveChangesAsync();
 
                 var savedProduct = await _context.Products
@@ -52,6 +118,7 @@ namespace Infrastructure.Repositories
                                 .Include(p => p.Suppliers)
                                 .Include(p => p.Tags)
                                 .FirstAsync(p => p.Id == entry.Entity.Id);
+
 
                 var createOutDto = new CreateProductOutDTO
                 {

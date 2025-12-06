@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace Application.DTOs.Inbound
+namespace Application.DTOs.Outbound
 {
     public class CreateProductOutDTO
     {
