@@ -1,6 +1,7 @@
 ﻿using Application.DTOs.Inbound;
 using Application.DTOs.Outbound;
 using Application.Interfaces.Commands;
+using Application.Interfaces.Repositories;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Commands
@@ -9,20 +10,20 @@ namespace Application.Commands
     {
         // Injections
         private readonly ILogger<InventoryCommand> _logger;
+        private readonly IInventoryManagementRepository _inventoryManagementRepository;
 
-        public InventoryCommand(ILogger<InventoryCommand> logger)
+        public InventoryCommand(ILogger<InventoryCommand> logger, IInventoryManagementRepository inventoryManagementRepository)
         {
             _logger = logger;
+            _inventoryManagementRepository = inventoryManagementRepository;
         }
 
-        public async Task<CreateProductInDTO> AddProductToInventoryAsync(CreateProductOutDTO createOutDTO)
+        public async Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createProdInDTO)
         {
             try
             {
-
-
-                // Implementation for adding product to inventory goes here.
-                throw new NotImplementedException("AddProductToInventoryAsync is not yet implemented.");
+                var createProduct = await _inventoryManagementRepository.AddProductToInventoryAsync(createProdInDTO);
+                return createProduct;
             }
             catch (Exception)
             {

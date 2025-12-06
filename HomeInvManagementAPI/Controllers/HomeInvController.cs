@@ -78,7 +78,7 @@ namespace HomeInvManagementAPI.Controllers
                 //{
                 //};
 
-                CreateProductOutDTO createItemDTO = new()
+                CreateProductInDTO createItemDTO = new()
                 {
                     ProductName = productRequest.ProductName,
                     Category = (int)productRequest.Category,
@@ -87,15 +87,14 @@ namespace HomeInvManagementAPI.Controllers
                                               .ToList(),
                     EANCode = productRequest.EANCode,
                     Brand = productRequest.Brand,
-                    ExpirationDate = productRequest.ExpirationDate?.ToString("dd-MM-yyyy:HHmmss"),
+                    ExpirationDate = productRequest.ExpirationDate,
                     CountriesOfOrigin = productRequest.CountriesOfOrigin,
                     Suppliers = productRequest.Suppliers,
-                    ImageBLOB = productRequest.ImageBLOB,
+                    ImageBLOB = productRequest.ImageBLOB, 
                     Tags = productRequest.Tags
-
                 };
 
-                CreateProductInDTO addedItemDTO = await _productAggregateCommand.AddProductToInventoryAsync(createItemDTO);
+                CreateProductOutDTO addedItemDTO = await _productAggregateCommand.AddProductToInventoryAsync(createItemDTO);
 
                 if (addedItemDTO == null)
                     return new StatusCodeResult(StatusCodes.Status422UnprocessableEntity);

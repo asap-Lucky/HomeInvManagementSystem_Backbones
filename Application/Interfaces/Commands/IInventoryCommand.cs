@@ -10,6 +10,6 @@ namespace Application.Interfaces.Commands
 {
     public interface IInventoryCommand
     {
-        public Task<CreateProductInDTO> AddProductToInventoryAsync(CreateProductOutDTO createOutDTO);
+        public Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createProdInDTO);    
     }
 }

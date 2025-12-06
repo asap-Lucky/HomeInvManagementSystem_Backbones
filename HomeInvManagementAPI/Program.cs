@@ -5,8 +5,6 @@ using Application.Interfaces.Repositories;
 using Application.Queries;
 using HomeInvManagementAPI.DI;
 using Infrastructure.Data;
-using Infrastructure.Persistence;
-using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

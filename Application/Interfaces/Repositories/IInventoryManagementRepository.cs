@@ -1,4 +1,5 @@
-﻿using Application.DTOs.Outbound;
+﻿using Application.DTOs.Inbound;
+using Application.DTOs.Outbound;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,7 @@ namespace Application.Interfaces.Repositories
 {
     public interface IInventoryManagementRepository
     {
-        public Task<CreateProductInDTO> AddProductToInventoryAsync(CreateProductInDTO createInDTO);
+        public Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createInDTO);
 
         public Task<List<CreateProductInDTO>> AddProductsBulkToInventoryAsync(List<CreateProductInDTO> createBulkInDTO);
     }

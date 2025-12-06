@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Infrastructure.Models.HomeInv;
 using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
+using Type = Infrastructure.Models.HomeInv.Type;
 
 namespace Infrastructure.Data;
 
@@ -33,10 +34,10 @@ public partial class HomeinvsystemContext : DbContext
 
     public virtual DbSet<Tag> Tags { get; set; }
 
-    public virtual DbSet<Models.HomeInv.Type> Types { get; set; }
+    public virtual DbSet<Type> Types { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseMySql("name=ConnectionStrings:HomeInvConnectionString", ServerVersion.Parse("8.0.44-mysql"));
+        => optionsBuilder.UseMySql("name=ConnectionStrings:HomeInvConnectionString", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.44-mysql"));
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -109,14 +110,14 @@ public partial class HomeinvsystemContext : DbContext
 
             entity.ToTable("product");
 
-            entity.HasIndex(e => e.Barcode, "barcode").IsUnique();
-
             entity.HasIndex(e => e.CategoryId, "category_id");
 
             entity.HasIndex(e => e.ImageId, "image_id");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Barcode).HasColumnName("barcode");
+            entity.Property(e => e.Barcode)
+                .HasMaxLength(13)
+                .HasColumnName("barcode");
             entity.Property(e => e.Brand)
                 .HasMaxLength(50)
                 .HasColumnName("brand");
@@ -265,7 +266,7 @@ public partial class HomeinvsystemContext : DbContext
                 .HasColumnName("name");
         });
 
-        modelBuilder.Entity<Models.HomeInv.Type>(entity =>
+        modelBuilder.Entity<Type>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");
 

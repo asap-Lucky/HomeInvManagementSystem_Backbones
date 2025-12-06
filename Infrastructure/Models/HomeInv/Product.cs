@@ -9,7 +9,7 @@ public partial class Product
 
     public string Name { get; set; } = null!;
 
-    public int? Barcode { get; set; }
+    public string? Barcode { get; set; }
 
     public string? Brand { get; set; }
 
