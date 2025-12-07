@@ -1,17 +1,8 @@
-﻿using Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Application.DTOs.Inbound
+﻿namespace Application.DTOs.Inbound
 {
     public class CreateProductInDTO
     {
-        public string ProductName { get; set; }
+        public required string ProductName { get; set; }
         public int Category { get; set; }
         public string? EANCode { get; set; }
         public string? Brand { get; set; }
@@ -19,7 +10,7 @@ namespace Application.DTOs.Inbound
         public DateTime? ExpirationDate { get; set; }
         public List<string>? CountriesOfOrigin { get; set; }    
         public List<string>? Suppliers { get; set; }
-        public List<int> Locations { get; set; }
+        public List<int>? Locations { get; set; }
         public List<string>? Tags { get; set; }
     }
 }

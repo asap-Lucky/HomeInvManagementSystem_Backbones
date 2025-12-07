@@ -15,7 +15,6 @@ namespace Domain.Enums
         Basement = 14,
         Balcony = 15,
         Carport = 16,
-        Unassigned = 17,
-        All = 9900
+        Unassigned = 17
     }
 }

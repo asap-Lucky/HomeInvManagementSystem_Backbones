@@ -6,22 +6,30 @@ namespace Application.DTOs.Outbound
     // Idea for a generic product DTO that will be mapped from various external product APIs.
     public class ProductAggregateDTO
     {
-        public string? ProductName { get; set; }
+        public int ProductId { get; set; }
 
-        public string? Category { get; set; }
+        public required string ProductName { get; set; }
 
-        public string? EANCode { get; set; }
+        public string? EanCode { get; set; }
 
         public string? Brand { get; set; }
 
-        public List<string>? CountriesOfOrigin { get; set; }
+        public DateTime? ExpirationDate { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public DateTime UpdatedAt { get; set; }
+
+        public string? Category { get; set; }
 
         public string? ImageBLOB { get; set; }
 
-        public List<ProductLocation> Locations { get; set; }
+        public List<ProductLocationDTO>? Locations { get; set; }
 
-        public List<string> Suppliers { get; set; }
+        public List<ProductCountryDTO>? CountriesOfOrigin { get; set; }
 
-        public List<string>? Tags { get; set; }
+        public List<ProductSupplierDTO>? Suppliers { get; set; }
+
+        public List<ProductTagDTO>? Tags { get; set; }
     }
 }

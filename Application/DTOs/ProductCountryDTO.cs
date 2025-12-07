@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Domain.Entities
+namespace Application.DTOs
 {
-    public class ProductCountry
+    public class ProductCountryDTO
     {
-        public int CoutryId { get; set; }
+        public int CountryId { get; set; }
 
         public string CountryName { get; set; }
     }

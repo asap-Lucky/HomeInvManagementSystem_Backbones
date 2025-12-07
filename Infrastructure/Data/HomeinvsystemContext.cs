@@ -64,8 +64,6 @@ public partial class HomeinvsystemContext : DbContext
 
             entity.ToTable("country");
 
-            entity.HasIndex(e => e.Name, "name").IsUnique();
-
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
@@ -135,6 +133,8 @@ public partial class HomeinvsystemContext : DbContext
 
             entity.HasIndex(e => e.ImageId, "image_id");
 
+            entity.HasIndex(e => e.Name, "name").IsUnique();
+
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Barcode)
                 .HasMaxLength(13)
@@ -151,9 +151,7 @@ public partial class HomeinvsystemContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("expires_at");
             entity.Property(e => e.ImageId).HasColumnName("image_id");
-            entity.Property(e => e.Name)
-                .HasMaxLength(25)
-                .HasColumnName("name");
+            entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.UpdatedAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
@@ -283,8 +281,6 @@ public partial class HomeinvsystemContext : DbContext
             entity.HasKey(e => e.Id).HasName("PRIMARY");
 
             entity.ToTable("tag");
-
-            entity.HasIndex(e => e.Name, "name").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name)

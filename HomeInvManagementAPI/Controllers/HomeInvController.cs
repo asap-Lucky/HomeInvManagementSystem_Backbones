@@ -4,7 +4,10 @@ using Application.Interfaces.Commands;
 using Application.Interfaces.Queries;
 using Domain.Enums;
 using HomeInvManagementAPI.DTOs.Request;
+using HomeInvManagementAPI.DTOs.Response;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection.Metadata.Ecma335;
 
 namespace HomeInvManagementAPI.Controllers
 {
@@ -63,7 +66,7 @@ namespace HomeInvManagementAPI.Controllers
             try
             {
                 // Check for valid route parameters (location and source)
-                if (!Enum.TryParse<ProductLocation>(location, true, out ProductLocation locationEnum))
+                if (!Enum.TryParse<ProductLocation>(location.Trim().Replace(" ", ""), true, out ProductLocation locationEnum))
                     return BadRequest("Invalid location. Please define a valid location");
 
                 List<ProductAggregateDTO> productListResponse = await _inventoryQuery.GetProductsFromInventoryAsync(locationEnum);
@@ -76,7 +79,10 @@ namespace HomeInvManagementAPI.Controllers
             }
         }
 
-        [HttpPost("inventory")]                                             
+        [HttpPost("inventory")]
+        [ProducesResponseType<CreateProductResponse>(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> CreateInventoryItemAsync([FromBody] CreateProductRequest productRequest)
         {
             try
@@ -104,10 +110,27 @@ namespace HomeInvManagementAPI.Controllers
 
                 CreateProductOutDTO addedItemDTO = await _inventoryCommand.AddProductToInventoryAsync(createItemDTO);
 
-                if (addedItemDTO == null)
+                    if (addedItemDTO == null)
                     return new StatusCodeResult(StatusCodes.Status422UnprocessableEntity);
 
-                return new StatusCodeResult(StatusCodes.Status201Created);
+                CreateProductResponse productResponse = new()
+                {
+                    ProductId = addedItemDTO.ProductId,
+                    ProductName = addedItemDTO.ProductName,
+                    EanCode = addedItemDTO.EanCode,
+                    Brand = addedItemDTO.Brand,
+                    ExpirationDate = addedItemDTO.ExpirationDate,
+                    CreatedAt = addedItemDTO.CreatedAt,
+                    UpdatedAt = addedItemDTO.UpdatedAt,
+                    Category = addedItemDTO.Category,
+                    ImageBLOB = addedItemDTO.ImageBLOB,
+                    Locations = addedItemDTO?.Locations?.Select(x => x.LocationName).ToList() ?? null,
+                    CountriesOfOrigin = addedItemDTO?.CountriesOfOrigin?.Select(x => x.CountryName).ToList() ?? null,
+                    Suppliers = addedItemDTO?.Suppliers?.Select(x => x.SupplierName).ToList() ?? null,
+                    Tags = addedItemDTO?.Tags?.Select(x => x.TagName).ToList() ?? null
+                };
+
+                return StatusCode(StatusCodes.Status201Created, productResponse);
             }
             catch (Exception ex)
             {

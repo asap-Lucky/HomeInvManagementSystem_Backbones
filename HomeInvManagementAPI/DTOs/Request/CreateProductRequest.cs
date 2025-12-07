@@ -1,13 +1,15 @@
-﻿using Domain.Entities;
+﻿
 using Domain.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace HomeInvManagementAPI.DTOs.Request
 {
     public class CreateProductRequest
     {
-        public required string ProductName { get; set; }
-        public required ProductCategory Category { get; set; }
-        public required List<ProductLocation> Locations { get; set; }
+        [Required]
+        public string ProductName { get; set; }
+        public ProductCategory Category { get; set; }
+        public List<ProductLocation> Locations { get; set; }
         public string? EANCode { get; set; }
         public string? Brand { get; set; }
         public DateTime? ExpirationDate { get; set; }

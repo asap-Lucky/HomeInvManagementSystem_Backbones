@@ -1,20 +1,10 @@
-﻿using Domain.Entities;
-using Domain.Enums;
-using Domain.Wrapper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
-
-namespace Application.DTOs.Outbound
+﻿namespace Application.DTOs.Outbound
 {
     public class CreateProductOutDTO
     {
         public int ProductId { get; set; }
 
-        public string ProductName { get; set; }
+        public required string ProductName { get; set; }
 
         public string? EanCode { get; set; }
 
@@ -26,17 +16,16 @@ namespace Application.DTOs.Outbound
 
         public DateTime UpdatedAt { get; set; }
 
-        public int Category { get; set; }
-
-        public List<int> Locations { get; set; }
-
-        // NOTE: One product can be produced in multiple countries. Example: Nuts collected in Bolivia, packaged for Lidl in Germany.
-        public List<string>? CountriesOfOrigin { get; set; }
-
-        public List<string>? Suppliers { get; set; }
+        public string? Category { get; set; }
 
         public string? ImageBLOB { get; set; }
 
-        public List<string>? Tags { get; set; }
+        public List<ProductLocationDTO>? Locations { get; set; }
+
+        public List<ProductCountryDTO>? CountriesOfOrigin { get; set; }
+
+        public List<ProductSupplierDTO>? Suppliers { get; set; }
+
+        public List<ProductTagDTO>? Tags { get; set; }
     }
 }

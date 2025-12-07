@@ -30,7 +30,5 @@ namespace Application.Commands
                 throw;
             }
         }
-
-
     }
 }

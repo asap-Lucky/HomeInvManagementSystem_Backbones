@@ -1,7 +1,7 @@
-﻿using Application.DTOs.Inbound;
+﻿using Application.DTOs;
+using Application.DTOs.Inbound;
 using Application.DTOs.Outbound;
 using Application.Interfaces.Repositories;
-using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -36,18 +37,37 @@ namespace Infrastructure.Repositories
                     .Where(p => p.ProductLocations.Any(pl => pl.LocationId == (int)location))
                     .ToListAsync();
 
-                var productDTOs = products.Select(p => new ProductAggregateDTO
+                var productDTOs = new List<ProductAggregateDTO>();
+
+                productDTOs = products.Select(p => new ProductAggregateDTO
                 {
-                    EANCode = p.Barcode,
+                    EanCode = p.Barcode,
                     ProductName = p.Name,
-                    Category = p.CategoryId.ToString(),
+                    Category = p.Category.Name,
                     Brand = p.Brand,
-                    CountriesOfOrigin = p.Countries.Select(x => x.Name).ToList(),
-                    Tags = p.Tags.Select(t => t.Name).ToList(),
-                    Locations = p.ProductLocations
-                                .Where(pl => pl.LocationId == (int)location)
-                                .Select(pl => (ProductLocation)pl.LocationId)
-                                .ToList()
+                    ImageBLOB = p.Image != null ? Encoding.UTF8.GetString(p.Image.Data) : null,
+                    ExpirationDate = p.ExpiresAt,
+                    CreatedAt = p.CreatedAt,
+                    UpdatedAt = p.UpdatedAt,
+                    Locations = p.ProductLocations.Select(pl => new ProductLocationDTO
+                    {
+                        LocationId = pl.LocationId,
+                        LocationName = _context.Locations
+                                              .Where(l => l.Id == pl.LocationId)
+                                              .Select(l => l.Name)
+                                              .FirstOrDefault() ?? string.Empty,
+                        Ammount = pl.Amount
+                    }).ToList(),
+                    CountriesOfOrigin = p.Countries.Select(cuntryOri => new ProductCountryDTO
+                    {
+                        CountryId = cuntryOri.Id,
+                        CountryName = cuntryOri.Name
+                    }).ToList(),
+                    Tags = p.Tags.Select(tag => new ProductTagDTO
+                    {
+                        TagId = tag.Id,
+                        TagName = tag.Name
+                    }).ToList()
                 }).ToList();
 
                 return productDTOs;
@@ -70,12 +90,33 @@ namespace Infrastructure.Repositories
 
                 var productDTO = new ProductAggregateDTO
                 {
-                    EANCode = products.Barcode,
+                    EanCode = products.Barcode,
                     ProductName = products.Name,
-                    Category = products.CategoryId.ToString(),
+                    Category = products.Category.Name,
                     Brand = products.Brand,
-                    CountriesOfOrigin = products.Countries.Select(x => x.Name).ToList(),
-                    Tags = products.Tags.Select(t => t.Name).ToList()
+                    ImageBLOB = products.Image != null ? Encoding.UTF8.GetString(products.Image.Data) : null,
+                    ExpirationDate = products.ExpiresAt,
+                    CreatedAt = products.CreatedAt,
+                    UpdatedAt = products.UpdatedAt,
+                    Locations = products.ProductLocations.Select(pl => new ProductLocationDTO
+                    {
+                        LocationId = pl.LocationId,
+                        LocationName = _context.Locations
+                                              .Where(l => l.Id == pl.LocationId)
+                                              .Select(l => l.Name)
+                                              .FirstOrDefault() ?? string.Empty,
+                        Ammount = pl.Amount
+                    }).ToList(),
+                    CountriesOfOrigin = products.Countries.Select(cuntryOri => new ProductCountryDTO
+                    {
+                        CountryId = cuntryOri.Id,
+                        CountryName = cuntryOri.Name
+                    }).ToList(),
+                    Tags = products.Tags.Select(tag => new ProductTagDTO
+                    {
+                        TagId = tag.Id,
+                        TagName = tag.Name
+                    }).ToList()
                 };
 
                 return productDTO;
@@ -180,39 +221,111 @@ namespace Infrastructure.Repositories
                                 .Include(p => p.Tags)
                                 .FirstAsync(p => p.Id == entry.Entity.Id);
 
-
-                var createOutDto = new CreateProductOutDTO
-                {
-                    ProductId = savedProduct.Id,
-                    ProductName = savedProduct.Name,
-                    Category = savedProduct.CategoryId,
-                    EanCode = savedProduct.Barcode,
-                    Brand = savedProduct.Brand,
-                    ExpirationDate = savedProduct.ExpiresAt,
-                    CreatedAt = savedProduct.CreatedAt,
-                    UpdatedAt = savedProduct.UpdatedAt,
-
-                    Locations = savedProduct.ProductLocations
-                                .Select(x => x.LocationId)
-                                .ToList(),
-
-                    CountriesOfOrigin = savedProduct.Countries
-                                .Select(x => x.Name)
-                                .ToList(),
-
-                    Suppliers = savedProduct.Suppliers
-                                .Select(x => x.Name)
-                                .ToList(),
-
-                    ImageBLOB = Convert.ToBase64String(savedProduct?.Image?.Data),
-                    Tags = savedProduct.Tags.Select(x => x.Name).ToList()
-                };
+                var createOutDto = SetCreateproductDto(savedProduct);
 
                 return createOutDto;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, ex.Message);
+                throw;
+            }
+        }
+
+        private CreateProductOutDTO SetCreateproductDto(Models.HomeInv.Product savedProduct)
+        {
+            try
+            {
+                var createOutDto = new CreateProductOutDTO
+                {
+                    ProductId = savedProduct.Id,
+                    ProductName = savedProduct.Name,
+                    Category = savedProduct.Category.Name ?? null,
+                    EanCode = savedProduct.Barcode,
+                    Brand = savedProduct.Brand,
+                    ExpirationDate = savedProduct.ExpiresAt,
+                    CreatedAt = savedProduct.CreatedAt,
+                    UpdatedAt = savedProduct.UpdatedAt,
+                    ImageBLOB = Encoding.UTF8.GetString(savedProduct?.Image?.Data) ?? null
+                };
+
+                if (savedProduct.ProductLocations != null && savedProduct.ProductLocations.Count != 0)
+                {
+                    foreach (var location in savedProduct.ProductLocations)
+                    {
+                        var test = _context.Locations.Where(x => x.Id != null).ToList();
+
+                        var pl = new ProductLocationDTO
+                        {
+                            LocationId = location.LocationId,
+                            LocationName = _context?.Locations?.Where(l => l.Id == location.LocationId)
+                                                             .Select(l => l.Name)
+                                                             .FirstOrDefault() ?? throw new Exception("Creation of new product has invalid location set."),
+                            Ammount = location.Amount
+                        };
+
+                        if (createOutDto.Locations == null)
+                            createOutDto.Locations = new List<ProductLocationDTO>();
+                        
+                        createOutDto.Locations.Add(pl);
+                    }
+                }
+
+                if (savedProduct.Countries != null && savedProduct.Countries.Count != 0)
+                {
+                    foreach (var country in savedProduct.Countries)
+                    {
+                        var pc = new ProductCountryDTO
+                        {
+                            CountryId = country.Id,
+                            CountryName = country.Name
+                        };
+
+                        if (createOutDto.CountriesOfOrigin == null)
+                            createOutDto.CountriesOfOrigin = new List<ProductCountryDTO>();
+
+                        createOutDto.CountriesOfOrigin.Add(pc);
+                    }
+                }
+
+                if (savedProduct.Suppliers != null && savedProduct.Suppliers.Count != 0)
+                {
+                    foreach (var supplier in savedProduct.Suppliers)
+                    {
+                        var ps = new ProductSupplierDTO
+                        {
+                            SupplierId = supplier.Id,
+                            SupplierName = supplier.Name
+                        };
+
+                        if (createOutDto.Suppliers == null)
+                            createOutDto.Suppliers = new List<ProductSupplierDTO>();
+
+                        createOutDto.Suppliers.Add(ps);
+                    }
+                }
+
+                if (savedProduct.Tags != null && savedProduct.Tags.Count != 0)
+                {
+                    foreach (var tag in savedProduct.Tags)
+                    {
+                        var pt = new ProductTagDTO
+                        {
+                            TagId = tag.Id,
+                            TagName = tag.Name
+                        };
+
+                        if (createOutDto.Tags == null)
+                            createOutDto.Tags = new List<ProductTagDTO>();
+
+                        createOutDto.Tags.Add(pt);
+                    }
+                }
+
+                return createOutDto;
+            }
+            catch (Exception)
+            {
                 throw;
             }
         }
