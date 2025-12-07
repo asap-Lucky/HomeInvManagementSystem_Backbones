@@ -16,7 +16,7 @@ namespace HomeInvManagementAPI.Mappers
                 EANCode = openFoodFactsResponse.EanCode ?? string.Empty,
                 ProductName = product.ProductName ?? "Unknown Product",
                 Brand = product.Brand ?? "Unknown Brand",
-                CountryOfOrigin = product.Countries ?? "Unknown Country",
+                CountriesOfOrigin = product.Countries ?? new List<string>(),
                 Tags = product.Keywords ?? new List<string>()
             };
         }

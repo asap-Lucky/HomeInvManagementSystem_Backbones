@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Domain.Enums;
 using System.Reflection.Metadata.Ecma335;
 using Application.DTOs.Outbound;
+using Application.Interfaces.Repositories;
 
 namespace Application.Queries
 {
@@ -11,42 +12,51 @@ namespace Application.Queries
         // Injections
         private readonly ILogger<InventoryQuery> _logger;
         private readonly IOpenFoodFactsQuery _openFoodFactsQuery;
+        private readonly IInventoryManagementRepository _inventoryManagementRepository;
 
-        public InventoryQuery(ILogger<InventoryQuery> logger, IOpenFoodFactsQuery openFoodFactsService)
+
+        public InventoryQuery(ILogger<InventoryQuery> logger, IOpenFoodFactsQuery openFoodFactsService, IInventoryManagementRepository inventoryManagementRepo)
         {
             _logger = logger;
             _openFoodFactsQuery = openFoodFactsService;
+            _inventoryManagementRepository = inventoryManagementRepo;
         }
 
-        public async Task<ProductAggregateDTO> GetProductByEanAsync(string ean, SourceDestination source, ProductLocation location)
+        public async Task<ProductAggregateDTO> GetProductByEanAsync(string ean, ProductLocation location, SourceDestination source = SourceDestination.Auto)
         {
             try
             {
-                if (source == SourceDestination.OFF)
+                switch (source)
                 {
-                    var productFromOFF = await _openFoodFactsQuery.GetProductByEanAsync(ean);
-                    return productFromOFF;
-                }
+                    case SourceDestination.OFF:
+                        var productFromOFF = await _openFoodFactsQuery.GetProductByEanAsync(ean);
+                        return productFromOFF;
 
-                if (source == SourceDestination.BTG)
-                {
-                    Exception exception = new Exception("BTG not yet implemented.");
-                    throw exception;
-                }
+                    case SourceDestination.BTG:
+                        Exception exception = new Exception("BTG not yet implemented.");
+                        throw exception;
 
-                if (source == SourceDestination.Auto)
-                {
-                    Exception exception = new Exception("Auto not yet implemented.");
-                    throw exception;
-                }
+                    case SourceDestination.DB:
+                        Exception exception1 = new Exception("DB not yet implemented.");
+                        throw exception1;
 
-                if (source == SourceDestination.DB)
-                {
-                    Exception exception = new Exception("DB not yet implemented.");
-                    throw exception;
+                    default:
+                        var productFromInventory = await _inventoryManagementRepository.GetProductFromInventoryAsync(location, ean);
+                        return productFromInventory;
                 }
+            }
+            catch (Exception)
+            {   
+                throw;
+            }
+        }
 
-                return null;
+        public async Task<List<ProductAggregateDTO>> GetProductsFromInventoryAsync(ProductLocation location)
+        {
+            try
+            {
+                var productsInInventory = await _inventoryManagementRepository.GetProductsFromInventoryAsync(location);
+                return productsInInventory;
             }
             catch (Exception)
             {

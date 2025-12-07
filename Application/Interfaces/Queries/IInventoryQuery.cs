@@ -10,6 +10,8 @@ namespace Application.Interfaces.Queries
 {
     public interface IInventoryQuery
     {
-        public Task<ProductAggregateDTO> GetProductByEanAsync(string ean, SourceDestination source, ProductLocation location);
+        public Task<ProductAggregateDTO> GetProductByEanAsync(string ean, ProductLocation location, SourceDestination source = SourceDestination.Auto);
+
+        public Task<List<ProductAggregateDTO>> GetProductsFromInventoryAsync(ProductLocation locatio);
     }
 }

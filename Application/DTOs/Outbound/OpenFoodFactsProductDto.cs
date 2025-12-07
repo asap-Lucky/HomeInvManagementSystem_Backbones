@@ -17,7 +17,7 @@ namespace Application.DTOs.Outbound
         public List<string>? BrandTags { get; set; }
 
         [JsonProperty("countries")]
-        public string? Countries { get; set; }
+        public List<string>? Countries { get; set; }    
 
         [JsonProperty("countries_tags")]
         public List<string>? CountryTags { get; set; }

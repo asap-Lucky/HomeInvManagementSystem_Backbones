@@ -2,6 +2,7 @@
 using Application.DTOs.Outbound;
 using Application.Interfaces.Repositories;
 using Domain.Entities;
+using Domain.Enums;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -25,8 +26,67 @@ namespace Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<>
+        // Read actions
+        public async Task<List<ProductAggregateDTO>> GetProductsFromInventoryAsync(ProductLocation location)
+        {
+            try
+            {
+                var products = await _context.Products
+                    .Include(p => p.ProductLocations)
+                    .Where(p => p.ProductLocations.Any(pl => pl.LocationId == (int)location))
+                    .ToListAsync();
 
+                var productDTOs = products.Select(p => new ProductAggregateDTO
+                {
+                    EANCode = p.Barcode,
+                    ProductName = p.Name,
+                    Category = p.CategoryId.ToString(),
+                    Brand = p.Brand,
+                    CountriesOfOrigin = p.Countries.Select(x => x.Name).ToList(),
+                    Tags = p.Tags.Select(t => t.Name).ToList(),
+                    Locations = p.ProductLocations
+                                .Where(pl => pl.LocationId == (int)location)
+                                .Select(pl => (ProductLocation)pl.LocationId)
+                                .ToList()
+                }).ToList();
+
+                return productDTOs;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task<ProductAggregateDTO> GetProductFromInventoryAsync(ProductLocation location, string? eanCode = null)
+        {
+            try
+            {
+                var products = await _context.Products
+                    .Include(p => p.ProductLocations)
+                    .Where(p => p.ProductLocations
+                        .Any(pl => pl.LocationId == (int)location && pl.Product.Barcode == eanCode))
+                    .SingleOrDefaultAsync();
+
+                var productDTO = new ProductAggregateDTO
+                {
+                    EANCode = products.Barcode,
+                    ProductName = products.Name,
+                    Category = products.CategoryId.ToString(),
+                    Brand = products.Brand,
+                    CountriesOfOrigin = products.Countries.Select(x => x.Name).ToList(),
+                    Tags = products.Tags.Select(t => t.Name).ToList()
+                };
+
+                return productDTO;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        // Create actions
         public async Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createInDTO)
         {
             try
@@ -111,6 +171,7 @@ namespace Infrastructure.Repositories
 
                 await _context.SaveChangesAsync();
 
+                // Joining back all data to return the created product with all relations.
                 var savedProduct = await _context.Products
                                 .Include(p => p.Image)
                                 .Include(p => p.ProductLocations)
@@ -156,7 +217,7 @@ namespace Infrastructure.Repositories
             }
         }
 
-        public async Task<List<CreateProductInDTO>> AddProductsBulkToInventoryAsync(List<CreateProductInDTO> createBulkInDTO)
+        public async Task<List<CreateProductOutDTO>> AddProductsBulkToInventoryAsync(List<CreateProductInDTO> createBulkInDTO)
         {
             try
             {
@@ -169,5 +230,10 @@ namespace Infrastructure.Repositories
                 throw;
             }
         }
+
+        // Update actions
+
+
+        // Delete actions
     }
 }

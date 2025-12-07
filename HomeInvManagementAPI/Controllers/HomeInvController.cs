@@ -3,11 +3,8 @@ using Application.DTOs.Outbound;
 using Application.Interfaces.Commands;
 using Application.Interfaces.Queries;
 using Domain.Enums;
-using Domain.Wrapper;
 using HomeInvManagementAPI.DTOs.Request;
-using HomeInvManagementAPI.Mappers;
 using Microsoft.AspNetCore.Mvc;
-using System.Text;
 
 namespace HomeInvManagementAPI.Controllers
 {
@@ -18,20 +15,19 @@ namespace HomeInvManagementAPI.Controllers
     public class HomeInvController : Controller
     {
         // Injections
-        private readonly IInventoryCommand _productAggregateCommand;
-
-        private readonly IInventoryQuery _productAggregateQuery;
+        private readonly IInventoryCommand _inventoryCommand;
+        private readonly IInventoryQuery _inventoryQuery;
         private readonly ILogger<HomeInvController> _logger;
 
-        public HomeInvController(IInventoryQuery productAggregateQuery, IInventoryCommand productAggregateCommand, ILogger<HomeInvController> logger)
+        public HomeInvController(IInventoryQuery inventoryQuery, IInventoryCommand inventoryCommand, ILogger<HomeInvController> logger)
         {
-            _productAggregateCommand = productAggregateCommand;
-            _productAggregateQuery = productAggregateQuery;
+            _inventoryCommand = inventoryCommand;
+            _inventoryQuery = inventoryQuery;
             _logger = logger;
         }
 
         [HttpGet("products/{location}/{eancode}")]
-        public async Task<ActionResult<ProductAggregateDTO>> GetProductDetailsByEanAsync([FromRoute] ProductLocation location, [FromRoute] string eancode, [FromQuery] SourceDestination source = SourceDestination.Auto)
+        public async Task<ActionResult<ProductAggregateDTO>> GetProductDetailsByEanAsync([FromRoute] string location, [FromRoute] string eancode, [FromQuery] string source = "auto")
         {
             try
             {
@@ -44,7 +40,14 @@ namespace HomeInvManagementAPI.Controllers
                 if (!trimmedEanCode.All(char.IsDigit))
                     return BadRequest("Invalid EAN code format. EAN code must contain only numeric characters.");
 
-                ProductAggregateDTO productResponse = await _productAggregateQuery.GetProductByEanAsync(trimmedEanCode, source, location);
+                // Check for valid route parameters (location and source)
+                if (!Enum.TryParse<ProductLocation>(location, true, out ProductLocation locationEnum))
+                    return BadRequest("Invalid location. Please define a valid location");
+
+                if (!Enum.TryParse<SourceDestination>(source, true, out SourceDestination sourceEnum))
+                    return BadRequest("Invalid source. Please define a valid source");
+
+                ProductAggregateDTO productResponse = await _inventoryQuery.GetProductByEanAsync(trimmedEanCode, locationEnum, sourceEnum);
 
                 return Ok(productResponse);
             }
@@ -55,12 +58,17 @@ namespace HomeInvManagementAPI.Controllers
         }
 
         [HttpGet("products/{location}")]
-        public async Task<ActionResult<List<ProductAggregateDTO>>> GetAllProductsAsync()
+        public async Task<ActionResult<List<ProductAggregateDTO>>> GetAllProductsAsync([FromRoute] string location)
         {
             try
             {
-                // NOTE: This will hit the Stored Procedure for getting all the products in the database. Since its a big query to handle otherwise.
-                return Ok();
+                // Check for valid route parameters (location and source)
+                if (!Enum.TryParse<ProductLocation>(location, true, out ProductLocation locationEnum))
+                    return BadRequest("Invalid location. Please define a valid location");
+
+                List<ProductAggregateDTO> productListResponse = await _inventoryQuery.GetProductsFromInventoryAsync(locationEnum);
+
+                return Ok(productListResponse);
             }
             catch (Exception ex)
             {
@@ -94,7 +102,7 @@ namespace HomeInvManagementAPI.Controllers
                     Tags = productRequest.Tags
                 };
 
-                CreateProductOutDTO addedItemDTO = await _productAggregateCommand.AddProductToInventoryAsync(createItemDTO);
+                CreateProductOutDTO addedItemDTO = await _inventoryCommand.AddProductToInventoryAsync(createItemDTO);
 
                 if (addedItemDTO == null)
                     return new StatusCodeResult(StatusCodes.Status422UnprocessableEntity);
