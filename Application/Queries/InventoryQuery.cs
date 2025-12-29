@@ -1,35 +1,30 @@
 ﻿using Application.Interfaces.Queries;
-using Microsoft.Extensions.Logging;
 using Domain.Enums;
-using System.Reflection.Metadata.Ecma335;
 using Application.DTOs.Outbound;
-using Application.Interfaces.Repositories;
+using Application.Interfaces.Repositories.InventoryManagement;
 
 namespace Application.Queries
 {
     public class InventoryQuery : IInventoryQuery
     {
         // Injections
-        private readonly ILogger<InventoryQuery> _logger;
         private readonly IOpenFoodFactsQuery _openFoodFactsQuery;
-        private readonly IInventoryManagementRepository _inventoryManagementRepository;
+        private readonly IProductReadRepository _prodReadRepo;
 
-
-        public InventoryQuery(ILogger<InventoryQuery> logger, IOpenFoodFactsQuery openFoodFactsService, IInventoryManagementRepository inventoryManagementRepo)
+        public InventoryQuery(IOpenFoodFactsQuery openFoodFactsService, IProductReadRepository prodReadRepo)
         {
-            _logger = logger;
             _openFoodFactsQuery = openFoodFactsService;
-            _inventoryManagementRepository = inventoryManagementRepo;
+            _prodReadRepo = prodReadRepo;
         }
 
-        public async Task<ProductAggregateDTO> GetProductByEanAsync(string ean, ProductLocation location, SourceDestination source = SourceDestination.Auto)
+        public async Task<ProductAggregateDTO> GetProductByEanAsync(string eanCode, ProductLocation location, SourceDestination source = SourceDestination.Auto)
         {
             try
             {
                 switch (source)
                 {
                     case SourceDestination.OFF:
-                        var productFromOFF = await _openFoodFactsQuery.GetProductByEanAsync(ean);
+                        var productFromOFF = await _openFoodFactsQuery.GetProductByEanAsync(eanCode);
                         return productFromOFF;
 
                     case SourceDestination.BTG:
@@ -41,7 +36,7 @@ namespace Application.Queries
                         throw exception1;
 
                     default:
-                        var productFromInventory = await _inventoryManagementRepository.GetProductFromInventoryAsync(location, ean);
+                        var productFromInventory = await _prodReadRepo.GetProductFromInventoryAsync(location, eanCode);
                         return productFromInventory;
                 }
             }
@@ -51,11 +46,11 @@ namespace Application.Queries
             }
         }
 
-        public async Task<List<ProductAggregateDTO>> GetProductsFromInventoryAsync(ProductLocation location)
+        public async Task<List<ProductAggregateDTO>> GetProductsFromInventoryAsync(ProductLocation location, bool getAllLocations = false)
         {
             try
             {
-                var productsInInventory = await _inventoryManagementRepository.GetProductsFromInventoryAsync(location);
+                var productsInInventory = await _prodReadRepo.GetProductsFromInventoryAsync(location, getAllLocations);
                 return productsInInventory;
             }
             catch (Exception)

@@ -1,10 +1,12 @@
 ﻿using Application.Commands;
 using Application.Interfaces.Commands;
 using Application.Interfaces.Repositories;
+using Application.Interfaces.Repositories.InventoryManagement;
 using HomeInvManagementAPI.Interfaces.Repositories;
 using HomeInvManagementAPI.Repositories;
 using Infrastructure.Configuration;
 using Infrastructure.Repositories;
+using Infrastructure.Repositories.InventoryManagement;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using System.Runtime.CompilerServices;
@@ -27,7 +29,8 @@ namespace HomeInvManagementAPI.DI
                 var options = sp.GetRequiredService<HomeInvOptions>();
             });
 
-            services.AddTransient<IInventoryManagementRepository, InventoryManagementRepository>();
+            services.AddTransient<IProductCreateRepository, ProductCreateRepository>();
+            services.AddTransient<IProductReadRepository, ProductReadRepositry>();
 
             return services;
         }

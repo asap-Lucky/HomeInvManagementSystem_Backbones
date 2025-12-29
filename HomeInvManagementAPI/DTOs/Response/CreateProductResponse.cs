@@ -11,7 +11,7 @@ namespace HomeInvManagementAPI.DTOs.Response
         public string? EanCode { get; set; }
 
         public string? Brand { get; set; }
-
+        
         public DateTime? ExpirationDate { get; set; }
 
         public DateTime CreatedAt { get; set; }

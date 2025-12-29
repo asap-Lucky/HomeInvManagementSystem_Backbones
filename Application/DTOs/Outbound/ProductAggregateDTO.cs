@@ -1,4 +1,5 @@
 ﻿using Domain.Enums;
+using Newtonsoft.Json;
 using System.Reflection.Metadata;
 
 namespace Application.DTOs.Outbound

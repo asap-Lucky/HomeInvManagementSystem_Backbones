@@ -30,7 +30,9 @@ namespace HomeInvManagementAPI.Controllers
         }
 
         [HttpGet("products/{location}/{eancode}")]
-        public async Task<ActionResult<ProductAggregateDTO>> GetProductDetailsByEanAsync([FromRoute] string location, [FromRoute] string eancode, [FromQuery] string source = "auto")
+        [ProducesResponseType<ProductAggregateDTO>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ProductAggregateDTO>> GetProductByEanAsync([FromRoute] string location, [FromRoute] string eancode, [FromQuery] string source = "auto")
         {
             try
             {
@@ -52,37 +54,44 @@ namespace HomeInvManagementAPI.Controllers
 
                 ProductAggregateDTO productResponse = await _inventoryQuery.GetProductByEanAsync(trimmedEanCode, locationEnum, sourceEnum);
 
-                return Ok(productResponse);
+                return StatusCode(StatusCodes.Status200OK, productResponse);
             }
             catch (Exception ex)
             {
-                return BadRequest($"Internal server error: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
 
         [HttpGet("products/{location}")]
-        public async Task<ActionResult<List<ProductAggregateDTO>>> GetAllProductsAsync([FromRoute] string location)
+        [ProducesResponseType<ProductAggregateDTO>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest), ]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<ProductAggregateDTO>>> GetProductsOnLocationAsync([FromRoute] string location = " ", [FromQuery] bool allLocations = false)
         {
             try
             {
+                if (allLocations)
+                {
+                    location = ProductLocation.Unassigned.ToString();
+                }
+
                 // Check for valid route parameters (location and source)
                 if (!Enum.TryParse<ProductLocation>(location.Trim().Replace(" ", ""), true, out ProductLocation locationEnum))
-                    return BadRequest("Invalid location. Please define a valid location");
+                    return StatusCode(StatusCodes.Status400BadRequest, "Invalid location. Please define a valid location");
 
-                List<ProductAggregateDTO> productListResponse = await _inventoryQuery.GetProductsFromInventoryAsync(locationEnum);
+                List<ProductAggregateDTO> productListResponse = await _inventoryQuery.GetProductsFromInventoryAsync(locationEnum, allLocations);
 
-                return Ok(productListResponse);
+                return StatusCode(StatusCodes.Status200OK, productListResponse);
             }
             catch (Exception ex)
             {
-                return BadRequest($"Internal server error: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
 
         [HttpPost("inventory")]
         [ProducesResponseType<CreateProductResponse>(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> CreateInventoryItemAsync([FromBody] CreateProductRequest productRequest)
         {
             try
@@ -110,9 +119,6 @@ namespace HomeInvManagementAPI.Controllers
 
                 CreateProductOutDTO addedItemDTO = await _inventoryCommand.AddProductToInventoryAsync(createItemDTO);
 
-                    if (addedItemDTO == null)
-                    return new StatusCodeResult(StatusCodes.Status422UnprocessableEntity);
-
                 CreateProductResponse productResponse = new()
                 {
                     ProductId = addedItemDTO.ProductId,
@@ -134,7 +140,7 @@ namespace HomeInvManagementAPI.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest($"Internal server error: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
 

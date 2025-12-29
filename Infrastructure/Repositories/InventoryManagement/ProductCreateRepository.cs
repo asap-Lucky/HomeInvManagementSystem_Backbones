@@ -1,133 +1,29 @@
 ﻿using Application.DTOs;
 using Application.DTOs.Inbound;
 using Application.DTOs.Outbound;
-using Application.Interfaces.Repositories;
-using Domain.Enums;
+using Application.Interfaces.Repositories.InventoryManagement;
 using Infrastructure.Data;
+using Infrastructure.Models.HomeInv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Infrastructure.Repositories
+namespace Infrastructure.Repositories.InventoryManagement
 {
-    public class InventoryManagementRepository : IInventoryManagementRepository
+    public class ProductCreateRepository : IProductCreateRepository
     {
         // Injections
-        private readonly ILogger<InventoryManagementRepository> _logger;
         private readonly HomeinvsystemContext _context;
 
-        public InventoryManagementRepository(ILogger<InventoryManagementRepository> logger, HomeinvsystemContext context)
+        public ProductCreateRepository(HomeinvsystemContext context)
         {
-            _logger = logger;
             _context = context;
         }
 
-        // Read actions
-        public async Task<List<ProductAggregateDTO>> GetProductsFromInventoryAsync(ProductLocation location)
-        {
-            try
-            {
-                var products = await _context.Products
-                    .Include(p => p.ProductLocations)
-                    .Where(p => p.ProductLocations.Any(pl => pl.LocationId == (int)location))
-                    .ToListAsync();
-
-                var productDTOs = new List<ProductAggregateDTO>();
-
-                productDTOs = products.Select(p => new ProductAggregateDTO
-                {
-                    EanCode = p.Barcode,
-                    ProductName = p.Name,
-                    Category = p.Category.Name,
-                    Brand = p.Brand,
-                    ImageBLOB = p.Image != null ? Encoding.UTF8.GetString(p.Image.Data) : null,
-                    ExpirationDate = p.ExpiresAt,
-                    CreatedAt = p.CreatedAt,
-                    UpdatedAt = p.UpdatedAt,
-                    Locations = p.ProductLocations.Select(pl => new ProductLocationDTO
-                    {
-                        LocationId = pl.LocationId,
-                        LocationName = _context.Locations
-                                              .Where(l => l.Id == pl.LocationId)
-                                              .Select(l => l.Name)
-                                              .FirstOrDefault() ?? string.Empty,
-                        Ammount = pl.Amount
-                    }).ToList(),
-                    CountriesOfOrigin = p.Countries.Select(cuntryOri => new ProductCountryDTO
-                    {
-                        CountryId = cuntryOri.Id,
-                        CountryName = cuntryOri.Name
-                    }).ToList(),
-                    Tags = p.Tags.Select(tag => new ProductTagDTO
-                    {
-                        TagId = tag.Id,
-                        TagName = tag.Name
-                    }).ToList()
-                }).ToList();
-
-                return productDTOs;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        public async Task<ProductAggregateDTO> GetProductFromInventoryAsync(ProductLocation location, string? eanCode = null)
-        {
-            try
-            {
-                var products = await _context.Products
-                    .Include(p => p.ProductLocations)
-                    .Where(p => p.ProductLocations
-                        .Any(pl => pl.LocationId == (int)location && pl.Product.Barcode == eanCode))
-                    .SingleOrDefaultAsync();
-
-                var productDTO = new ProductAggregateDTO
-                {
-                    EanCode = products.Barcode,
-                    ProductName = products.Name,
-                    Category = products.Category.Name,
-                    Brand = products.Brand,
-                    ImageBLOB = products.Image != null ? Encoding.UTF8.GetString(products.Image.Data) : null,
-                    ExpirationDate = products.ExpiresAt,
-                    CreatedAt = products.CreatedAt,
-                    UpdatedAt = products.UpdatedAt,
-                    Locations = products.ProductLocations.Select(pl => new ProductLocationDTO
-                    {
-                        LocationId = pl.LocationId,
-                        LocationName = _context.Locations
-                                              .Where(l => l.Id == pl.LocationId)
-                                              .Select(l => l.Name)
-                                              .FirstOrDefault() ?? string.Empty,
-                        Ammount = pl.Amount
-                    }).ToList(),
-                    CountriesOfOrigin = products.Countries.Select(cuntryOri => new ProductCountryDTO
-                    {
-                        CountryId = cuntryOri.Id,
-                        CountryName = cuntryOri.Name
-                    }).ToList(),
-                    Tags = products.Tags.Select(tag => new ProductTagDTO
-                    {
-                        TagId = tag.Id,
-                        TagName = tag.Name
-                    }).ToList()
-                };
-
-                return productDTO;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        // Create actions
         public async Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createInDTO)
         {
             try
@@ -149,7 +45,7 @@ namespace Infrastructure.Repositories
                 var entry = _context.Products.Add(product);
                 await _context.SaveChangesAsync();
 
-                // Populate Junction tables 
+                // Populate Junction tables
                 if (createInDTO.Locations != null)
                 {
                     foreach (var locationId in createInDTO.Locations)
@@ -221,18 +117,18 @@ namespace Infrastructure.Repositories
                                 .Include(p => p.Tags)
                                 .FirstAsync(p => p.Id == entry.Entity.Id);
 
-                var createOutDto = SetCreateproductDto(savedProduct);
+                var createOutDto = await SetCreateproductDto(savedProduct);
 
                 return createOutDto;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
                 throw;
             }
         }
 
-        private CreateProductOutDTO SetCreateproductDto(Models.HomeInv.Product savedProduct)
+        // Sets the return product DTO after creation to the outbound DTO.
+        private async Task<CreateProductOutDTO> SetCreateproductDto(Product savedProduct)
         {
             try
             {
@@ -240,7 +136,6 @@ namespace Infrastructure.Repositories
                 {
                     ProductId = savedProduct.Id,
                     ProductName = savedProduct.Name,
-                    Category = savedProduct.Category.Name ?? null,
                     EanCode = savedProduct.Barcode,
                     Brand = savedProduct.Brand,
                     ExpirationDate = savedProduct.ExpiresAt,
@@ -249,12 +144,25 @@ namespace Infrastructure.Repositories
                     ImageBLOB = Encoding.UTF8.GetString(savedProduct?.Image?.Data) ?? null
                 };
 
+                // Set the category name from category id due to otherwise having to update in database and in API if new categories are added.
+                // This does call the database again, but only once per creation, so should be fine for now.
+                if (savedProduct.CategoryId != null)
+                {
+                    var category = await _context.Categories
+                        .FirstOrDefaultAsync(categories => categories.Id == savedProduct.CategoryId);
+
+                    if (category is null)
+                    {
+                        throw new Exception($"Invalid category id '{savedProduct.CategoryId}' supplied.");
+                    }
+
+                    createOutDto.Category = category?.Name;
+                }
+
                 if (savedProduct.ProductLocations != null && savedProduct.ProductLocations.Count != 0)
                 {
                     foreach (var location in savedProduct.ProductLocations)
                     {
-                        var test = _context.Locations.Where(x => x.Id != null).ToList();
-
                         var pl = new ProductLocationDTO
                         {
                             LocationId = location.LocationId,
@@ -266,7 +174,7 @@ namespace Infrastructure.Repositories
 
                         if (createOutDto.Locations == null)
                             createOutDto.Locations = new List<ProductLocationDTO>();
-                        
+
                         createOutDto.Locations.Add(pl);
                     }
                 }
@@ -343,10 +251,5 @@ namespace Infrastructure.Repositories
                 throw;
             }
         }
-
-        // Update actions
-
-
-        // Delete actions
     }
 }

@@ -2,6 +2,7 @@
 using Application.DTOs.Outbound;
 using Application.Interfaces.Commands;
 using Application.Interfaces.Repositories;
+using Application.Interfaces.Repositories.InventoryManagement;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Commands
@@ -9,20 +10,18 @@ namespace Application.Commands
     public class InventoryCommand : IInventoryCommand
     {
         // Injections
-        private readonly ILogger<InventoryCommand> _logger;
-        private readonly IInventoryManagementRepository _inventoryManagementRepository;
+        private readonly IProductCreateRepository _prodCreateRepo;
 
-        public InventoryCommand(ILogger<InventoryCommand> logger, IInventoryManagementRepository inventoryManagementRepository)
+        public InventoryCommand(IProductCreateRepository productCreate)
         {
-            _logger = logger;
-            _inventoryManagementRepository = inventoryManagementRepository;
+            _prodCreateRepo = productCreate;
         }
 
         public async Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createProdInDTO)
         {
             try
             {
-                var createProduct = await _inventoryManagementRepository.AddProductToInventoryAsync(createProdInDTO);
+                var createProduct = await _prodCreateRepo.AddProductToInventoryAsync(createProdInDTO);
                 return createProduct;
             }
             catch (Exception)
