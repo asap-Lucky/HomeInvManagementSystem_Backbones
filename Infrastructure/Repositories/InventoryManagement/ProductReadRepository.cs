@@ -12,12 +12,12 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Repositories.InventoryManagement
 {
-    public class ProductReadRepositry : IProductReadRepository
+    public class ProductReadRepository : IProductReadRepository
     {
         // Injections
         private readonly HomeinvsystemContext _context;
 
-        public ProductReadRepositry(HomeinvsystemContext context)
+        public ProductReadRepository(HomeinvsystemContext context)
         {
             _context = context;
         }

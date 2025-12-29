@@ -58,6 +58,7 @@ namespace HomeInvManagementAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while fetching product by EAN.");
                 return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
@@ -85,6 +86,7 @@ namespace HomeInvManagementAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while fetching products from inventory.");
                 return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
@@ -140,6 +142,7 @@ namespace HomeInvManagementAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while creating a new inventory item.");
                 return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
@@ -149,7 +152,6 @@ namespace HomeInvManagementAPI.Controllers
         {
             try
             {
-                // NOTE: This will hit the Stored Procedure for getting all the products in the database. Since its a big query to handle otherwise.
                 return Ok();
             }
             catch (Exception ex)

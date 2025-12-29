@@ -30,7 +30,7 @@ namespace HomeInvManagementAPI.DI
             });
 
             services.AddTransient<IProductCreateRepository, ProductCreateRepository>();
-            services.AddTransient<IProductReadRepository, ProductReadRepositry>();
+            services.AddTransient<IProductReadRepository, ProductReadRepository>();
 
             return services;
         }
