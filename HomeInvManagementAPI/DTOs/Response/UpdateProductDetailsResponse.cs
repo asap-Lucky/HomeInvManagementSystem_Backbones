@@ -1,8 +1,9 @@
 ﻿using Application.DTOs;
+using Domain.Enums;
 
 namespace HomeInvManagementAPI.DTOs.Response
 {
-    public class CreateProductResponse
+    public class UpdateProductDetailsResponse
     {
         public int ProductId { get; set; }
 
@@ -11,16 +12,14 @@ namespace HomeInvManagementAPI.DTOs.Response
         public string? EanCode { get; set; }
 
         public string? Brand { get; set; }
-        
-        public DateTime? ExpirationDate { get; set; }
 
-        public DateTime CreatedAt { get; set; }
+        public DateTime? ExpirationDate { get; set; }
 
         public DateTime UpdatedAt { get; set; }
 
-        public string? Category { get; set; }
+        public ProductCategoryDTO Category { get; set; } = null!;
 
-        public string? ImageBLOB { get; set; }
+        public ProductImageDTO? ImageBLOB { get; set; }
 
         public List<ProductLocationDTO>? Locations { get; set; }
 

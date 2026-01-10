@@ -15,13 +15,6 @@ namespace Application.Interfaces.Repositories.InventoryManagement
         /// </summary>
         /// <param name="createInDTO"></param>
         /// <returns></returns>
-        public Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createInDTO);
-
-        /// <summary>
-        /// Creates multiple products in bulk in the inventory using the provided list of CreateProductInDTO. 
-        /// </summary>
-        /// <param name="createBulkInDTO"></param>
-        /// <returns></returns>
-        public Task<List<CreateProductOutDTO>> AddProductsBulkToInventoryAsync(List<CreateProductInDTO> createBulkInDTO);
+        public Task<CreateProductOutDTO> AddProductToInventoryDBAsync(CreateProductInDTO createInDTO);
     }
 }

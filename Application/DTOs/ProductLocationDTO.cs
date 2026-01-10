@@ -12,6 +12,6 @@ namespace Application.DTOs
 
         public string LocationName { get; set; }
 
-        public int Ammount { get; set; }
+        public int Quantity { get; set; }
     }
 }

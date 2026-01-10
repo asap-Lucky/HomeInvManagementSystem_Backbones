@@ -1,8 +1,13 @@
-﻿using Application.DTOs;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace HomeInvManagementAPI.DTOs.Response
+namespace Application.DTOs.Outbound
 {
-    public class CreateProductResponse
+    public class UpdateProductDetailsOutDTO
     {
         public int ProductId { get; set; }
 
@@ -11,16 +16,14 @@ namespace HomeInvManagementAPI.DTOs.Response
         public string? EanCode { get; set; }
 
         public string? Brand { get; set; }
-        
-        public DateTime? ExpirationDate { get; set; }
 
-        public DateTime CreatedAt { get; set; }
+        public DateTime? ExpirationDate { get; set; }
 
         public DateTime UpdatedAt { get; set; }
 
-        public string? Category { get; set; }
+        public ProductCategoryDTO Category { get; set; } = null!;
 
-        public string? ImageBLOB { get; set; }
+        public ProductImageDTO? Image { get; set; }
 
         public List<ProductLocationDTO>? Locations { get; set; }
 

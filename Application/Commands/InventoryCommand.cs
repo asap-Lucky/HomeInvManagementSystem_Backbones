@@ -10,19 +10,34 @@ namespace Application.Commands
     public class InventoryCommand : IInventoryCommand
     {
         // Injections
-        private readonly IProductCreateRepository _prodCreateRepo;
+        private readonly IProductCreateRepository _createProductRepo;
+        private readonly IProductUpdateRepository _updateProductRepo;
 
-        public InventoryCommand(IProductCreateRepository productCreate)
+        public InventoryCommand(IProductCreateRepository createProductRepo, IProductUpdateRepository updateProductRepo)
         {
-            _prodCreateRepo = productCreate;
+            _createProductRepo = createProductRepo;
+            _updateProductRepo = updateProductRepo;
         }
 
         public async Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createProdInDTO)
         {
             try
             {
-                var createProduct = await _prodCreateRepo.AddProductToInventoryAsync(createProdInDTO);
+                var createProduct = await _createProductRepo.AddProductToInventoryDBAsync(createProdInDTO);
                 return createProduct;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task<UpdateProductDetailsOutDTO> UpdateProductDetailsAsync(UpdateProductDetailsInDTO updateProdInDTO)
+        {
+            try
+            {
+                var updateProduct = await _updateProductRepo.UpdateProductDetailsDBAsync(updateProdInDTO);
+                return updateProduct;
             }
             catch (Exception)
             {

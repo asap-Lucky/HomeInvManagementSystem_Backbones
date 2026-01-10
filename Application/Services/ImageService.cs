@@ -1,6 +1,8 @@
 ﻿using Application.Interfaces.Services;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,14 +11,37 @@ namespace Application.Services
 {
     internal class ImageService : IImageService
     {
-        public string SerializeImageToBase64(byte[] imageBytes)
+        // Injections
+        private readonly ILogger<ImageService> _logger;
+
+        public ImageService(ILogger<ImageService> logger)
         {
-            return Convert.ToBase64String(imageBytes);
+            _logger = logger;
         }
 
-        public byte[] DeserializeBase64ToImage(string base64String)
-        {
-            return Convert.FromBase64String(base64String);
-        }
+        //public Byte[] CompressImage(string base64Image)
+        //{
+        //    try
+        //    {
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, );
+        //    }
+        //}
+
+        //public Image DecompressBase64Image(byte[] base64Image)
+        //{
+        //    try
+        //    {
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, );
+        //        return null;
+        //    }
+        //}
     }
 }

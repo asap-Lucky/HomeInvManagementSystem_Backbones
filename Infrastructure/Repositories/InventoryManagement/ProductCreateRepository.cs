@@ -5,12 +5,7 @@ using Application.Interfaces.Repositories.InventoryManagement;
 using Infrastructure.Data;
 using Infrastructure.Models.HomeInv;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Infrastructure.Repositories.InventoryManagement
 {
@@ -24,7 +19,7 @@ namespace Infrastructure.Repositories.InventoryManagement
             _context = context;
         }
 
-        public async Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createInDTO)
+        public async Task<CreateProductOutDTO> AddProductToInventoryDBAsync(CreateProductInDTO createInDTO)
         {
             try
             {
@@ -73,35 +68,54 @@ namespace Infrastructure.Repositories.InventoryManagement
                     }
                 }
 
-                if (createInDTO.CountriesOfOrigin != null)
+                if (createInDTO.OriginCountries != null)
                 {
-                    foreach (var countryName in createInDTO.CountriesOfOrigin)
+                    var countryListDB = await _context.Countries.ToListAsync();
+
+                    foreach (var countryId in createInDTO.OriginCountries)
                     {
+                        var countryDB = countryListDB.FirstOrDefault(c => c.Id == countryId) ?? 
+                            throw new Exception($"Country with id {countryId} not found in database!");
+
                         product.Countries.Add(new Models.HomeInv.Country
                         {
-                            Name = countryName
+                            Id = countryDB.Id,
+                            Name = countryDB.Name
                         });
                     }
                 }
 
                 if (createInDTO.Suppliers != null)
                 {
-                    foreach (var supplierName in createInDTO.Suppliers)
+                    var supplierListDB = await _context.Suppliers.ToListAsync();
+
+                    foreach (var supplierId in createInDTO.Suppliers)
                     {
+                        var supplierDB = supplierListDB.FirstOrDefault(s => s.Id == supplierId) ??
+                            throw new Exception($"Supplier with id {supplierId} not found in database");
+                        // If not found - What then to do and how to communicate to the user the upload was successful but some countries were invalid?
+
                         product.Suppliers.Add(new Models.HomeInv.Supplier
                         {
-                            Name = supplierName
+                            Id = supplierDB.Id,
+                            Name = supplierDB.Name
                         });
                     }
                 }
 
                 if (createInDTO.Tags != null)
                 {
-                    foreach (var tagName in createInDTO.Tags)
+                    var tagListDB = await _context.Tags.ToListAsync();
+
+                    foreach (var tagId in createInDTO.Tags)
                     {
+                        var tagDB = tagListDB.FirstOrDefault(t => t.Id == tagId) ??
+                            throw new Exception($"Tag with id {tagId} not found in database");
+
                         product.Tags.Add(new Models.HomeInv.Tag
                         {
-                            Name = tagName
+                            Id = tagDB.Id,
+                            Name = tagDB.Name
                         });
                     }
                 }
@@ -169,7 +183,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                             LocationName = _context?.Locations?.Where(l => l.Id == location.LocationId)
                                                              .Select(l => l.Name)
                                                              .FirstOrDefault() ?? throw new Exception("Creation of new product has invalid location set."),
-                            Ammount = location.Amount
+                            Quantity = location.Amount
                         };
 
                         if (createOutDto.Locations == null)
@@ -231,20 +245,6 @@ namespace Infrastructure.Repositories.InventoryManagement
                 }
 
                 return createOutDto;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        public async Task<List<CreateProductOutDTO>> AddProductsBulkToInventoryAsync(List<CreateProductInDTO> createBulkInDTO)
-        {
-            try
-            {
-                // TODO: Imp base response wrapper later to set some values that are needed later.
-                // Implementation for adding product to inventory goes here.
-                throw new NotImplementedException("AddProductToInventoryAsync is not yet implemented.");
             }
             catch (Exception)
             {

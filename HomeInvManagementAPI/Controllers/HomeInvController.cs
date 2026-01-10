@@ -2,10 +2,13 @@
 using Application.DTOs.Outbound;
 using Application.Interfaces.Commands;
 using Application.Interfaces.Queries;
+using Azure;
 using Domain.Enums;
 using HomeInvManagementAPI.DTOs.Request;
 using HomeInvManagementAPI.DTOs.Response;
+using Infrastructure.Models.HomeInv;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection.Metadata.Ecma335;
 
@@ -13,7 +16,7 @@ namespace HomeInvManagementAPI.Controllers
 {
     // NOTE: Make sure these requests can take both an ean and a product id due to the fact that the ean can be null (apple, banana, pear etc.) dont have an ean code.
 
-    [Route("[controller]/v1")]
+    [Route("[controller]/v1/products")]
     [ApiController]
     public class HomeInvController : Controller
     {
@@ -29,7 +32,7 @@ namespace HomeInvManagementAPI.Controllers
             _logger = logger;
         }
 
-        [HttpGet("products/{location}/{eancode}")]
+        [HttpGet("{location}/{eancode}")]
         [ProducesResponseType<ProductAggregateDTO>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<ProductAggregateDTO>> GetProductByEanAsync([FromRoute] string location, [FromRoute] string eancode, [FromQuery] string source = "auto")
@@ -46,7 +49,7 @@ namespace HomeInvManagementAPI.Controllers
                     return BadRequest("Invalid EAN code format. EAN code must contain only numeric characters.");
 
                 // Check for valid route parameters (location and source)
-                if (!Enum.TryParse<ProductLocation>(location, true, out ProductLocation locationEnum))
+                if (!Enum.TryParse<Domain.Enums.ProductLocation>(location, true, out Domain.Enums.ProductLocation locationEnum))
                     return BadRequest("Invalid location. Please define a valid location");
 
                 if (!Enum.TryParse<SourceDestination>(source, true, out SourceDestination sourceEnum))
@@ -63,9 +66,9 @@ namespace HomeInvManagementAPI.Controllers
             }
         }
 
-        [HttpGet("products/{location}")]
+        [HttpGet("{location}")]
         [ProducesResponseType<ProductAggregateDTO>(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest), ]
+        [ProducesResponseType(StatusCodes.Status400BadRequest),]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<List<ProductAggregateDTO>>> GetProductsOnLocationAsync([FromRoute] string location = " ", [FromQuery] bool allLocations = false)
         {
@@ -73,11 +76,11 @@ namespace HomeInvManagementAPI.Controllers
             {
                 if (allLocations)
                 {
-                    location = ProductLocation.Unassigned.ToString();
+                    location = Domain.Enums.ProductLocation.Unassigned.ToString();
                 }
 
                 // Check for valid route parameters (location and source)
-                if (!Enum.TryParse<ProductLocation>(location.Trim().Replace(" ", ""), true, out ProductLocation locationEnum))
+                if (!Enum.TryParse<Domain.Enums.ProductLocation>(location.Trim().Replace(" ", ""), true, out Domain.Enums.ProductLocation locationEnum))
                     return StatusCode(StatusCodes.Status400BadRequest, "Invalid location. Please define a valid location");
 
                 List<ProductAggregateDTO> productListResponse = await _inventoryQuery.GetProductsFromInventoryAsync(locationEnum, allLocations);
@@ -91,10 +94,10 @@ namespace HomeInvManagementAPI.Controllers
             }
         }
 
-        [HttpPost("inventory")]
+        [HttpPost]
         [ProducesResponseType<CreateProductResponse>(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult> CreateInventoryItemAsync([FromBody] CreateProductRequest productRequest)
+        public async Task<ActionResult<CreateProductResponse>> CreateProductInInventoryAsync([FromBody] CreateProductRequest productCreateRequest)
         {
             try
             {
@@ -105,18 +108,18 @@ namespace HomeInvManagementAPI.Controllers
 
                 CreateProductInDTO createItemDTO = new()
                 {
-                    ProductName = productRequest.ProductName,
-                    Category = (int)productRequest.Category,
-                    Locations = productRequest.Locations
+                    ProductName = productCreateRequest.ProductName,
+                    Category = (int)productCreateRequest.Category,
+                    Locations = productCreateRequest.Locations
                                               .Select(location => (int)location)
                                               .ToList(),
-                    EANCode = productRequest.EANCode,
-                    Brand = productRequest.Brand,
-                    ExpirationDate = productRequest.ExpirationDate,
-                    CountriesOfOrigin = productRequest.CountriesOfOrigin,
-                    Suppliers = productRequest.Suppliers,
-                    ImageBLOB = productRequest.ImageBLOB, 
-                    Tags = productRequest.Tags
+                    EANCode = productCreateRequest.EANCode,
+                    Brand = productCreateRequest.Brand,
+                    ExpirationDate = productCreateRequest.ExpirationDate,
+                    OriginCountries = productCreateRequest.OriginCountries,
+                    Suppliers = productCreateRequest.Suppliers,
+                    ImageBLOB = productCreateRequest.ImageBLOB,
+                    Tags = productCreateRequest.Tags
                 };
 
                 CreateProductOutDTO addedItemDTO = await _inventoryCommand.AddProductToInventoryAsync(createItemDTO);
@@ -132,10 +135,10 @@ namespace HomeInvManagementAPI.Controllers
                     UpdatedAt = addedItemDTO.UpdatedAt,
                     Category = addedItemDTO.Category,
                     ImageBLOB = addedItemDTO.ImageBLOB,
-                    Locations = addedItemDTO?.Locations?.Select(x => x.LocationName).ToList() ?? null,
-                    CountriesOfOrigin = addedItemDTO?.CountriesOfOrigin?.Select(x => x.CountryName).ToList() ?? null,
-                    Suppliers = addedItemDTO?.Suppliers?.Select(x => x.SupplierName).ToList() ?? null,
-                    Tags = addedItemDTO?.Tags?.Select(x => x.TagName).ToList() ?? null
+                    Locations = addedItemDTO?.Locations,
+                    OriginCountries = addedItemDTO?.CountriesOfOrigin,
+                    Suppliers = addedItemDTO?.Suppliers,
+                    Tags = addedItemDTO?.Tags
                 };
 
                 return StatusCode(StatusCodes.Status201Created, productResponse);
@@ -147,12 +150,23 @@ namespace HomeInvManagementAPI.Controllers
             }
         }
 
-        [HttpPut("inventory/{location}")]
-        public async Task<ActionResult<ProductAggregateDTO>> UpdateInventoryItemAsync()
+        [HttpPut("{productid}")]
+        [ProducesResponseType<UpdateProductDetailsResponse>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<UpdateProductDetailsResponse>> UpdateProductInfoAsync([FromRoute] int productId, [FromRoute] string location, [FromBody] UpdateProductDetailsInDTO productUpdateRequest)
         {
             try
             {
-                return Ok();
+                if (productId == null || productId < 0)
+                    return StatusCode(StatusCodes.Status400BadRequest, "Invalid product id. Make sure the product id is filled out and is valid id bigger than 0");
+
+                // TODO: Validate other properties if needed. Move this validation later to Domain.
+                if (!Enum.TryParse<Domain.Enums.ProductLocation>(location, true, out Domain.Enums.ProductLocation locationEnum))
+                    return BadRequest("Invalid location. Please define a valid location");
+
+                var updatedProductDTO = await _inventoryCommand.UpdateProductDetailsAsync(productUpdateRequest);
+
+                return Ok(updatedProductDTO);
             }
             catch (Exception ex)
             {
@@ -160,8 +174,25 @@ namespace HomeInvManagementAPI.Controllers
             }
         }
 
-        [HttpDelete("inventory/{location}/{id}")]
-        public async Task<ActionResult<ProductAggregateDTO>> DeleteInventoryItemAsync()
+        // TODO: Read docs about PATCH method and implement it properly.
+        [HttpPatch("{location}/{productid}")]
+        [ProducesResponseType<ProductQuantityResponse>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ProductQuantityResponse>> UpdateStockQuantityOnLocationAsync([FromRoute] int productId, [FromRoute] string location, [FromBody] JsonPatchDocument<UpdateInvQuantityRequest> quantityUpdateRequest)
+        {
+            try
+            {
+                throw new NotImplementedException();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Internal server error: {ex.Message}");
+            }
+        }
+
+        // Remember to handle cascading deletes in the database for related entities.
+        [HttpDelete("{productid}")]
+        public async Task<ActionResult<ProductAggregateDTO>> DeleteProductInInventoryAsync()
         {
             try
             {
@@ -173,7 +204,5 @@ namespace HomeInvManagementAPI.Controllers
                 return BadRequest($"Internal server error: {ex.Message}");
             }
         }
-
-        // BULK OPERATIONS (Using Stored procedures)
     }
 }
