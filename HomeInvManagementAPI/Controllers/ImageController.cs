@@ -1,6 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Application.Interfaces.Commands;
+using Application.Interfaces.Queries;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Identity.Client;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 
 namespace HomeInvManagementAPI.Controllers
 {
@@ -8,15 +12,26 @@ namespace HomeInvManagementAPI.Controllers
     [ApiController]
     public class ImageController : Controller
     {
-        [HttpPost("serialize")]
-        public ActionResult<string> SerializeImage(IFormFile image)
+        // Injections 
+        private readonly ILogger<ImageController> _logger;
+        private readonly IImageCommand _imageCommand;
+        private readonly IImageQuery _imageQuery;
+
+        public ImageController(ILogger<ImageController> logger, IImageCommand imageCommand, IImageQuery imageQuery)
+        {
+            _logger = logger;
+            _imageCommand = imageCommand;
+            _imageQuery = imageQuery;
+        }
+
+        [HttpPost("upload")]
+        public async Task<ActionResult> UploadImageToDBAsync(IFormFile image)
         {
             try
             {
-                // Validation
                 List<string> permittedExtensions = new() { ".jpg", ".jpeg", ".png" };
                 var fileSizeLimit = 5 * 1024 * 1024; // 5 MB
-                
+
                 var imageExt = Path.GetExtension(image.FileName).ToLowerInvariant();
 
                 if (string.IsNullOrEmpty(imageExt) || !permittedExtensions.Contains(imageExt))
@@ -33,16 +48,17 @@ namespace HomeInvManagementAPI.Controllers
                 using var memoryStream = new MemoryStream();
                 image.CopyTo(memoryStream);
                 byte[] imageBytes = memoryStream.ToArray();
-                string base64String = Convert.ToBase64String(imageBytes);
 
-                // Compress image
+                int imageId = await _imageCommand.UploadImageAsync(imageBytes);
 
-                return Ok(base64String);
+                return StatusCode(StatusCodes.Status200OK, imageId);
             }
             catch (Exception ex)
             {
                 return BadRequest($"Internal server error: {ex.Message}");
             }
         }
+
+
     }
 }

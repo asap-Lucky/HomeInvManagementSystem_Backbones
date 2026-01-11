@@ -1,11 +1,13 @@
 ﻿using Application.Commands;
 using Application.Interfaces.Commands;
 using Application.Interfaces.Repositories;
+using Application.Interfaces.Repositories.ImageHandler;
 using Application.Interfaces.Repositories.InventoryManagement;
 using HomeInvManagementAPI.Interfaces.Repositories;
 using HomeInvManagementAPI.Repositories;
 using Infrastructure.Configuration;
 using Infrastructure.Repositories;
+using Infrastructure.Repositories.ImageHandler;
 using Infrastructure.Repositories.InventoryManagement;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
@@ -32,6 +34,10 @@ namespace HomeInvManagementAPI.DI
             services.AddTransient<IProductCreateRepository, ProductCreateRepository>();
             services.AddTransient<IProductReadRepository, ProductReadRepository>();
             services.AddTransient<IProductUpdateRepository, ProductUpdateRepository>();
+            
+            services.AddTransient<IImageUploadRepository, ImageUploadRepository>();
+            services.AddTransient<IImageDownloadRepository, ImageDownloadRepository>();
+            services.AddTransient<IImageDeleteRepository, ImageDeleteRepository>();
 
             return services;
         }

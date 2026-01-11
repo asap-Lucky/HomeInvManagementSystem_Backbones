@@ -5,6 +5,7 @@ using Application.Interfaces.Repositories.InventoryManagement;
 using Infrastructure.Data;
 using Infrastructure.Models.HomeInv;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Text;
 
 namespace Infrastructure.Repositories.InventoryManagement
@@ -13,10 +14,12 @@ namespace Infrastructure.Repositories.InventoryManagement
     {
         // Injections
         private readonly HomeinvsystemContext _context;
+        private readonly ILogger<ProductCreateRepository> _logger;
 
-        public ProductCreateRepository(HomeinvsystemContext context)
+        public ProductCreateRepository(HomeinvsystemContext context, ILogger<ProductCreateRepository> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task<CreateProductOutDTO> AddProductToInventoryDBAsync(CreateProductInDTO createInDTO)
@@ -137,6 +140,7 @@ namespace Infrastructure.Repositories.InventoryManagement
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while adding product to inventory.");
                 throw;
             }
         }
@@ -246,8 +250,9 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                 return createOutDto;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while setting CreateProductOutDTO.");
                 throw;
             }
         }

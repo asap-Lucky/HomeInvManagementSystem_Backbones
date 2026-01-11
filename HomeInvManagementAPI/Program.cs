@@ -13,8 +13,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+// Commands
 builder.Services.AddTransient<IInventoryCommand, InventoryCommand>();
+builder.Services.AddTransient<IImageCommand, ImageCommand>();
+
+// Queries
 builder.Services.AddTransient<IInventoryQuery, InventoryQuery>();
+builder.Services.AddTransient<IImageQuery, ImageQuery>();
 builder.Services.AddTransient<IOpenFoodFactsQuery, OpenFoodFactsQuery>();
 
 var homeInvConnectionString = builder.Configuration["ConnectionStrings:HomeInvConnectionString"];

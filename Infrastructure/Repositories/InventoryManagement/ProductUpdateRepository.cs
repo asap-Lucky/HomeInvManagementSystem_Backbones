@@ -3,6 +3,7 @@ using Application.DTOs.Inbound;
 using Application.DTOs.Outbound;
 using Application.Interfaces.Repositories.InventoryManagement;
 using Infrastructure.Data;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,10 +16,12 @@ namespace Infrastructure.Repositories.InventoryManagement
     {
         // Injections
         private readonly HomeinvsystemContext _context;
+        private readonly ILogger<ProductUpdateRepository> _logger;
 
-        public ProductUpdateRepository(HomeinvsystemContext context)
+        public ProductUpdateRepository(HomeinvsystemContext context, ILogger<ProductUpdateRepository> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task<UpdateProductDetailsOutDTO> UpdateProductDetailsDBAsync(UpdateProductDetailsInDTO incomingDTO)
@@ -38,15 +41,6 @@ namespace Infrastructure.Repositories.InventoryManagement
                 productDB.UpdatedAt = DateTime.Now;
                 productDB.Category = _context.Categories.FirstOrDefault(c => c.Id == incomingDTO.Category.CategoryId)!;
 
-                // If not picture exsists matching id create a new one in the DB.
-                productDB.Image = incomingDTO.Image != null ? _context.Images.FirstOrDefault(i => i.Id == incomingDTO.Image.Id) : new Models.HomeInv.Image()
-                {
-                    Id = 0,
-                    Data = incomingDTO.Image != null ? incomingDTO.Image.Data : Array.Empty<byte>(),
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
-                };
-
                 // Set complex relations.
                 productDB.Suppliers = incomingDTO.Suppliers != null ? incomingDTO.Suppliers.Select(s => _context.Suppliers.FirstOrDefault(sup => sup.Id == s.SupplierId)).ToList() : new List<Models.HomeInv.Supplier>();
                 productDB.Tags = incomingDTO.Tags != null ? incomingDTO.Tags.Select(t => _context.Tags.FirstOrDefault(tag => tag.Id == t.TagId)).ToList() : new List<Models.HomeInv.Tag>();
@@ -58,8 +52,9 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                 return outgoingDTO;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "An error occurred while updating product details in the database.");
                 throw;
             }
         }
@@ -110,7 +105,7 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                 return outgoingDTO;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 throw;
             }

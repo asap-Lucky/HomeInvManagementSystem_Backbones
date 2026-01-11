@@ -16,10 +16,12 @@ namespace Infrastructure.Repositories.InventoryManagement
     {
         // Injections
         private readonly HomeinvsystemContext _context;
+        private readonly ILogger<ProductReadRepository> _logger;
 
-        public ProductReadRepository(HomeinvsystemContext context)
+        public ProductReadRepository(HomeinvsystemContext context, ILogger<ProductReadRepository> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task<List<ProductAggregateDTO>> GetProductsFromInventoryAsync(Domain.Enums.ProductLocation location, bool getAllLocations = false)
@@ -100,8 +102,9 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                 return productListDTO;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "An error occurred while retrieving products from inventory.");
                 throw;
             }
         }
@@ -165,8 +168,9 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                 return productDTO;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "An error occurred while retrieving a product from inventory.");
                 throw;
             }
         }
