@@ -68,13 +68,13 @@ namespace HomeInvManagementAPI.Controllers
         }
 
         [HttpGet("download/{imageId}")]
-        public async Task<ActionResult> DownloadImageFromDBAsync([FromRoute]int imageId)
+        public async Task<ActionResult> DownloadImageFromDBAsync([FromRoute] int imageId)
         {
             try
             {
                 if (imageId <= 0)
                     return BadRequest("Invalid image ID.");
-                
+
                 var inDTO = new ImageDownloadInDTO
                 {
                     ImageId = imageId
@@ -116,14 +116,22 @@ namespace HomeInvManagementAPI.Controllers
                 if (imageId <= 0)
                     return BadRequest("Invalid image ID.");
 
-                var result = await _imageCommand.DeleteImageAsync(imageId);
-                if (!result)
+                var inDTO = new ImageDeleteInDTO
+                {
+                    ImageId = imageId
+                };
+
+                var outDTO = await _imageCommand.DeleteImageAsync(inDTO);
+
+                if (!outDTO.IsDeleted)
                     return NotFound("Image not found or could not be deleted.");
-                return NoContent();
+
+                return StatusCode(StatusCodes.Status200OK, outDTO);
             }
             catch (Exception ex)
             {
                 return BadRequest($"Internal server error: {ex.Message}");
             }
         }
+    }
 }
