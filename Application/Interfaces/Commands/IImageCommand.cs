@@ -11,6 +11,6 @@ namespace Application.Interfaces.Commands
     {
         public Task<ImageUploadOutDTO> UploadImageAsync(ImageUploadInDTO inDTO);
 
-        public Task<bool> DeleteImageAsync(int imageId);
+        public Task<ImageDeleteOutDTO> DeleteImageAsync(ImageDeleteInDTO inDTO);
     }
 }

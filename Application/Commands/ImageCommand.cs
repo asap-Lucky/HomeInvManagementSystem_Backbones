@@ -13,10 +13,12 @@ namespace Application.Commands
     {
         // Injections 
         private readonly IImageUploadRepository _imageUploadRepo;
+        private readonly IImageDeleteRepository _imageDeleteRepo;
 
-        public ImageCommand(IImageUploadRepository uploadRepository)
+        public ImageCommand(IImageUploadRepository uploadRepository, IImageDeleteRepository imageDeleteRepo)
         {
             _imageUploadRepo = uploadRepository;
+            _imageDeleteRepo = imageDeleteRepo;
         }
 
         public async Task<ImageUploadOutDTO> UploadImageAsync(ImageUploadInDTO inDTO)
@@ -32,11 +34,12 @@ namespace Application.Commands
             }
         }
 
-        public async Task<bool> DeleteImageAsync(int imageId)
+        public async Task<ImageDeleteOutDTO> DeleteImageAsync(ImageDeleteInDTO inDTO)
         {
             try
             {
-                throw new NotImplementedException();
+                ImageDeleteOutDTO outDTO = await _imageDeleteRepo.DeleteImageAsync(inDTO);
+                return outDTO;
             }
             catch (Exception)
             {

@@ -6,6 +6,7 @@ using Microsoft.Identity.Client;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace HomeInvManagementAPI.Controllers
 {
@@ -67,7 +68,7 @@ namespace HomeInvManagementAPI.Controllers
         }
 
         [HttpGet("download/{imageId}")]
-        public async Task<ActionResult<Image>> DownloadImageFromDBAsync(int imageId)
+        public async Task<ActionResult> DownloadImageFromDBAsync([FromRoute]int imageId)
         {
             try
             {
@@ -84,11 +85,20 @@ namespace HomeInvManagementAPI.Controllers
                 if (outDTO?.ImageBytes == null || outDTO.ImageBytes.Length == 0)
                     return NotFound("Image not found.");
 
-                var fileName = outDTO.FileName ?? $"image_{imageId}.jpg";
+                var fileName = $"image_{imageId}{outDTO.Extension}";
+
+                var selectedContentType = outDTO.Extension.ToLowerInvariant() switch
+                {
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".png" => "image/png",
+                    ".gif" => "image/gif",
+                    ".webp" => "image/webp",
+                    _ => "application/octet-stream"
+                };
 
                 return File(
                     fileContents: outDTO.ImageBytes,
-                    contentType: outDTO.Extension,
+                    contentType: selectedContentType,
                     fileDownloadName: fileName
                 );
             }
@@ -97,5 +107,23 @@ namespace HomeInvManagementAPI.Controllers
                 return BadRequest($"Internal server error: {ex.Message}");
             }
         }
-    }
+
+        [HttpDelete("delete/{imageId}")]
+        public async Task<ActionResult> DeleteImageFromDBAsync([FromRoute] int imageId)
+        {
+            try
+            {
+                if (imageId <= 0)
+                    return BadRequest("Invalid image ID.");
+
+                var result = await _imageCommand.DeleteImageAsync(imageId);
+                if (!result)
+                    return NotFound("Image not found or could not be deleted.");
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Internal server error: {ex.Message}");
+            }
+        }
 }
