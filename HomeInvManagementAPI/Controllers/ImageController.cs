@@ -1,4 +1,5 @@
-﻿using Application.Interfaces.Commands;
+﻿using Application.DTOs.Image;
+using Application.Interfaces.Commands;
 using Application.Interfaces.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Client;
@@ -49,9 +50,15 @@ namespace HomeInvManagementAPI.Controllers
                 image.CopyTo(memoryStream);
                 byte[] imageBytes = memoryStream.ToArray();
 
-                int imageId = await _imageCommand.UploadImageAsync(imageBytes);
+                var inputDto = new ImageUploadInDTO
+                {
+                    ImageBytes = imageBytes,
+                    Extension = imageExt
+                };
 
-                return StatusCode(StatusCodes.Status200OK, imageId);
+                var outDTO = await _imageCommand.UploadImageAsync(inputDto);
+
+                return StatusCode(StatusCodes.Status200OK, outDTO);
             }
             catch (Exception ex)
             {
@@ -59,6 +66,36 @@ namespace HomeInvManagementAPI.Controllers
             }
         }
 
+        [HttpGet("download/{imageId}")]
+        public async Task<ActionResult<Image>> DownloadImageFromDBAsync(int imageId)
+        {
+            try
+            {
+                if (imageId <= 0)
+                    return BadRequest("Invalid image ID.");
+                
+                var inDTO = new ImageDownloadInDTO
+                {
+                    ImageId = imageId
+                };
 
+                var outDTO = await _imageQuery.DownloadImageAsync(inDTO);
+
+                if (outDTO?.ImageBytes == null || outDTO.ImageBytes.Length == 0)
+                    return NotFound("Image not found.");
+
+                var fileName = outDTO.FileName ?? $"image_{imageId}.jpg";
+
+                return File(
+                    fileContents: outDTO.ImageBytes,
+                    contentType: outDTO.Extension,
+                    fileDownloadName: fileName
+                );
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Internal server error: {ex.Message}");
+            }
+        }
     }
 }

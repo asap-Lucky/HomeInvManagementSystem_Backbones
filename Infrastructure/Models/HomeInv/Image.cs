@@ -11,5 +11,7 @@ public partial class Image
 
     public DateTime CreatedAt { get; set; }
 
+    public string Extension { get; set; } = null!;
+
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 }

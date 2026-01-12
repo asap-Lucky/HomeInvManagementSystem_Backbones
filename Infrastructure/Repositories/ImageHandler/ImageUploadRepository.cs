@@ -1,4 +1,5 @@
-﻿using Application.Interfaces.Repositories.ImageHandler;
+﻿using Application.DTOs.Image;
+using Application.Interfaces.Repositories.ImageHandler;
 using Infrastructure.Data;
 using Infrastructure.Models.HomeInv;
 using Microsoft.Extensions.Logging;
@@ -17,20 +18,28 @@ namespace Infrastructure.Repositories.ImageHandler
             _logger = logger;
         }
 
-        public async Task<int> UploadImageAsync(byte[] imageData)
+        public async Task<ImageUploadOutDTO> UploadImageAsync(ImageUploadInDTO inDTO)
         {
             try
             {
                 var newImage = new Image
                 {
-                    Data = imageData,
-                    CreatedAt = DateTime.Now
+                    Data = inDTO.ImageBytes,
+                    CreatedAt = DateTime.Now,
+                    Extension = inDTO.Extension
                 };
 
                 _context.Images.Add(newImage);
                 await _context.SaveChangesAsync();
 
-                return newImage.Id;
+                var outDTO = new ImageUploadOutDTO
+                {
+                    ImageId = newImage.Id,
+                    IsUploaded = true,
+                    URL = null // TODO: Generate URL.
+                };
+
+                return outDTO;
             }
             catch (Exception ex)
             {

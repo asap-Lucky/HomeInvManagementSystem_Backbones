@@ -1,4 +1,5 @@
-﻿using Application.Interfaces.Commands;
+﻿using Application.DTOs.Image;
+using Application.Interfaces.Commands;
 using Application.Interfaces.Repositories.ImageHandler;
 using System;
 using System.Collections.Generic;
@@ -13,18 +14,29 @@ namespace Application.Commands
         // Injections 
         private readonly IImageUploadRepository _imageUploadRepo;
 
-
         public ImageCommand(IImageUploadRepository uploadRepository)
         {
             _imageUploadRepo = uploadRepository;
         }
 
-        public async Task<int> UploadImageAsync(byte[] imageBytes)
+        public async Task<ImageUploadOutDTO> UploadImageAsync(ImageUploadInDTO inDTO)
         {
             try
             {
-                int imageId = await _imageUploadRepo.UploadImageAsync(imageBytes);
-                return imageId;
+                ImageUploadOutDTO outDTO = await _imageUploadRepo.UploadImageAsync(inDTO);
+                return outDTO;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task<bool> DeleteImageAsync(int imageId)
+        {
+            try
+            {
+                throw new NotImplementedException();
             }
             catch (Exception)
             {

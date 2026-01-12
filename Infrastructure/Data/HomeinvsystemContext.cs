@@ -84,6 +84,9 @@ public partial class HomeinvsystemContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.Data).HasColumnName("data");
+            entity.Property(e => e.Extension)
+                .HasMaxLength(5)
+                .HasColumnName("extension");
         });
 
         modelBuilder.Entity<Itemtype>(entity =>

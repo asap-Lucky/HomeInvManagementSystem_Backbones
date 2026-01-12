@@ -1,4 +1,5 @@
-﻿using Application.Interfaces.Queries;
+﻿using Application.DTOs.Image;
+using Application.Interfaces.Queries;
 using Application.Interfaces.Repositories.ImageHandler;
 using System;
 using System.Collections.Generic;
@@ -19,13 +20,12 @@ namespace Application.Queries
             _imageDownloadRepo = imageDownloadRepository;
         }
 
-        public async Task<Image> DownloadImageAsync(int imageId)
+        public async Task<ImageDownloadOutDTO> DownloadImageAsync(ImageDownloadInDTO inDTO)
         {
             try
             {
-                throw new NotImplementedException();
-                //var imageData = await 
-                //return imageData;
+                var outDTO = await _imageDownloadRepo.DownloadImageAsync(inDTO);
+                return outDTO;
             }
             catch (Exception)
             {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Application.DTOs.Image;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,6 @@ namespace Application.Interfaces.Repositories.ImageHandler
 {
     public interface IImageUploadRepository
     {
-        public Task<int> UploadImageAsync(byte[] imageData);
+        public Task<ImageUploadOutDTO> UploadImageAsync(ImageUploadInDTO inDTO);
     }
 }
