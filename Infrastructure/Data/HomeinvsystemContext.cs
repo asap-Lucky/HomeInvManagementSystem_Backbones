@@ -131,9 +131,9 @@ public partial class HomeinvsystemContext : DbContext
 
             entity.HasIndex(e => e.CategoryId, "category_id");
 
-            entity.HasIndex(e => e.ImageId, "image_id");
-
             entity.HasIndex(e => e.Name, "name").IsUnique();
+
+            entity.HasIndex(e => e.ImageId, "product_ibfk_3");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Barcode)
@@ -165,6 +165,7 @@ public partial class HomeinvsystemContext : DbContext
 
             entity.HasOne(d => d.Image).WithMany(p => p.Products)
                 .HasForeignKey(d => d.ImageId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("product_ibfk_3");
 
             entity.HasMany(d => d.Countries).WithMany(p => p.Products)
