@@ -5,8 +5,8 @@ using Application.Interfaces.Repositories.InventoryManagement;
 using Infrastructure.Data;
 using Infrastructure.Models.HomeInv;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
-using System.Text;
 
 namespace Infrastructure.Repositories.InventoryManagement
 {
@@ -262,11 +262,11 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                 var productNames = new List<string> { "Milk", "Bread", "Eggs", "Butter", "Cheese", "Yogurt", "Apples", "Bananas", "Chicken", "Beef" };
                 var brands = new List<string> { "BrandA", "BrandB", "BrandC", "BrandD" };
-                var locations = await _context.Locations.ToListAsync();
-                var tags = await _context.Tags.ToListAsync();
-                var suppliers = await _context.Suppliers.ToListAsync();
-                var categories = await _context.Categories.ToListAsync();
-                var countries = await _context.Countries.ToListAsync();
+                var locations = await _context.Locations.AsNoTracking().ToListAsync();
+                var tags = await _context.Tags.AsNoTracking().ToListAsync();
+                var suppliers = await _context.Suppliers.AsNoTracking().ToListAsync();
+                var categories = await _context.Categories.AsNoTracking().ToListAsync();
+                var countries = await _context.Countries.AsNoTracking().ToListAsync();
 
                 for (int i = 0; i < mockAmmount; i++)
                 {

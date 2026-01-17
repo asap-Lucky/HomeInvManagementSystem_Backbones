@@ -101,7 +101,7 @@ namespace HomeInvManagementAPI.Controllers
         {
             try
             {
-                _inventoryCommand.AddMockProductsAsync(10);
+                await _inventoryCommand.AddMockProductsAsync(1);
                 return Ok();
                 // TODO: Imp base request wrapper later to set some values that are needed later.
                 //BaseRequestWrapper<CreateProductRequest> requestWrapper = new()
