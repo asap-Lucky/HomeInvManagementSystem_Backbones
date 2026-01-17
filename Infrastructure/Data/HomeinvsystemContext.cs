@@ -87,6 +87,7 @@ public partial class HomeinvsystemContext : DbContext
             entity.Property(e => e.Extension)
                 .HasMaxLength(5)
                 .HasColumnName("extension");
+            entity.Property(e => e.IsAssigned).HasColumnName("isAssigned");
         });
 
         modelBuilder.Entity<Itemtype>(entity =>

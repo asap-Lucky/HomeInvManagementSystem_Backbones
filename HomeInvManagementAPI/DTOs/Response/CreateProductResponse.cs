@@ -20,7 +20,7 @@ namespace HomeInvManagementAPI.DTOs.Response
 
         public string? Category { get; set; }
 
-        public string? ImageBLOB { get; set; }
+        public int? ImageId { get; set; }
 
         public List<ProductLocationDTO>? Locations { get; set; }
 

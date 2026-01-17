@@ -101,6 +101,8 @@ namespace HomeInvManagementAPI.Controllers
         {
             try
             {
+                _inventoryCommand.AddMockProductsAsync(10);
+                return Ok();
                 // TODO: Imp base request wrapper later to set some values that are needed later.
                 //BaseRequestWrapper<CreateProductRequest> requestWrapper = new()
                 //{
@@ -118,7 +120,6 @@ namespace HomeInvManagementAPI.Controllers
                     ExpirationDate = productCreateRequest.ExpirationDate,
                     OriginCountries = productCreateRequest.OriginCountries,
                     Suppliers = productCreateRequest.Suppliers,
-                    ImageBLOB = productCreateRequest.ImageBLOB,
                     Tags = productCreateRequest.Tags
                 };
 
@@ -134,7 +135,7 @@ namespace HomeInvManagementAPI.Controllers
                     CreatedAt = addedItemDTO.CreatedAt,
                     UpdatedAt = addedItemDTO.UpdatedAt,
                     Category = addedItemDTO.Category,
-                    ImageBLOB = addedItemDTO.ImageBLOB,
+                    ImageId = addedItemDTO.ImageId,
                     Locations = addedItemDTO?.Locations,
                     OriginCountries = addedItemDTO?.CountriesOfOrigin,
                     Suppliers = addedItemDTO?.Suppliers,
@@ -163,7 +164,7 @@ namespace HomeInvManagementAPI.Controllers
                 // TODO: Validate other properties if needed. Move this validation later to Domain.
                 if (!Enum.TryParse<Domain.Enums.ProductLocation>(location, true, out Domain.Enums.ProductLocation locationEnum))
                     return BadRequest("Invalid location. Please define a valid location");
-
+                    
                 var updatedProductDTO = await _inventoryCommand.UpdateProductDetailsAsync(productUpdateRequest);
 
                 return Ok(updatedProductDTO);

@@ -32,6 +32,19 @@ namespace Application.Commands
             }
         }
 
+        // TODO: Delete this later
+        public async Task AddMockProductsAsync(int mockAmmount)
+        {
+            try
+            {
+                await _createProductRepo.AddMockProductsToDBAsync(mockAmmount);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
         public async Task<UpdateProductDetailsOutDTO> UpdateProductDetailsAsync(UpdateProductDetailsInDTO updateProdInDTO)
         {
             try

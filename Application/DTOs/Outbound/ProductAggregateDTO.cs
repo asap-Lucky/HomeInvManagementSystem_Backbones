@@ -23,6 +23,10 @@ namespace Application.DTOs.Outbound
 
         public string? Category { get; set; }
 
+        // ImageId used internally
+        public int? ImageId { get; set; }
+
+        // ImageUrl for external API use
         public string? ImageBLOB { get; set; }
 
         public List<ProductLocationDTO>? Locations { get; set; }

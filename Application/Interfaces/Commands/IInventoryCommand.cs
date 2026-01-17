@@ -12,6 +12,8 @@ namespace Application.Interfaces.Commands
     {
         public Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createProdInDTO);
 
+        public Task AddMockProductsAsync(int mockAmmount);
+
         public Task<UpdateProductDetailsOutDTO> UpdateProductDetailsAsync(UpdateProductDetailsInDTO updateProdInDTO);
     }
 }

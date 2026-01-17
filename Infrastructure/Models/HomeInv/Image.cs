@@ -13,5 +13,7 @@ public partial class Image
 
     public string Extension { get; set; } = null!;
 
+    public bool IsAssigned { get; set; }
+
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 }

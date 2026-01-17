@@ -16,5 +16,7 @@ namespace Application.Interfaces.Repositories.InventoryManagement
         /// <param name="createInDTO"></param>
         /// <returns></returns>
         public Task<CreateProductOutDTO> AddProductToInventoryDBAsync(CreateProductInDTO createInDTO);
+
+        public Task AddMockProductsToDBAsync(int mockAmmount);
     }
 }

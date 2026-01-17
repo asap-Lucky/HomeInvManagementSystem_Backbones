@@ -43,7 +43,7 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                 // Set complex relations.
                 productDB.Suppliers = incomingDTO.Suppliers != null ? incomingDTO.Suppliers.Select(s => _context.Suppliers.FirstOrDefault(sup => sup.Id == s.SupplierId)).ToList() : new List<Models.HomeInv.Supplier>();
-                productDB.Tags = incomingDTO.Tags != null ? incomingDTO.Tags.Select(t => _context.Tags.FirstOrDefault(tag => tag.Id == t.TagId)).ToList() : new List<Models.HomeInv.Tag>();
+                productDB.Tags = incomingDTO.Tags != null ? incomingDTO.Tags?.Select(t => _context.Tags.FirstOrDefault(tag => tag.Id == t.TagId)).ToList() : new List<Models.HomeInv.Tag>();
                 productDB.Countries = incomingDTO.OriginCountries != null ? incomingDTO.OriginCountries.Select(c => _context.Countries.FirstOrDefault(country => country.Id == c.CountryId)).ToList() : new List<Models.HomeInv.Country>();
 
                 await _context.SaveChangesAsync();

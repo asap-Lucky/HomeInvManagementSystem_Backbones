@@ -34,10 +34,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                     Barcode = createInDTO.EANCode,
                     Brand = createInDTO.Brand,
                     ExpiresAt = createInDTO.ExpirationDate,
-                    Image = createInDTO.ImageBLOB != null ? new Models.HomeInv.Image
-                    {
-                        Data = Encoding.UTF8.GetBytes(createInDTO.ImageBLOB)
-                    } : null
+                    ImageId = createInDTO.ImageId,
                 };
 
                 var entry = _context.Products.Add(product);
@@ -159,7 +156,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                     ExpirationDate = savedProduct.ExpiresAt,
                     CreatedAt = savedProduct.CreatedAt,
                     UpdatedAt = savedProduct.UpdatedAt,
-                    ImageBLOB = Encoding.UTF8.GetString(savedProduct?.Image?.Data) ?? null
+                    ImageId = savedProduct.ImageId
                 };
 
                 // Set the category name from category id due to otherwise having to update in database and in API if new categories are added.
@@ -253,6 +250,46 @@ namespace Infrastructure.Repositories.InventoryManagement
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while setting CreateProductOutDTO.");
+                throw;
+            }
+        }
+
+        public async Task AddMockProductsToDBAsync(int mockAmmount)
+        {
+            try
+            {
+                Random rnd = new();
+
+                var productNames = new List<string> { "Milk", "Bread", "Eggs", "Butter", "Cheese", "Yogurt", "Apples", "Bananas", "Chicken", "Beef" };
+                var brands = new List<string> { "BrandA", "BrandB", "BrandC", "BrandD" };
+                var locations = await _context.Locations.ToListAsync();
+                var tags = await _context.Tags.ToListAsync();
+                var suppliers = await _context.Suppliers.ToListAsync();
+                var categories = await _context.Categories.ToListAsync();
+                var countries = await _context.Countries.ToListAsync();
+
+                for (int i = 0; i < mockAmmount; i++)
+                {
+                    var productIn = new CreateProductInDTO
+                    {
+                        ProductName = productNames[rnd.Next(productNames.Count)],
+                        Category = categories[rnd.Next(categories.Count)].Id,
+                        EANCode = rnd.Next(111111111, 999999999).ToString(),
+                        Brand = brands[rnd.Next(brands.Count)],
+                        ExpirationDate = DateTime.UtcNow.AddDays(rnd.Next(1, 365)),
+                        ImageId = rnd.Next(1, 5),
+                        Locations = new List<int> { locations[rnd.Next(locations.Count)].Id },
+                        Tags = new List<int> { tags[rnd.Next(tags.Count)].Id },
+                        Suppliers = new List<int> { suppliers[rnd.Next(suppliers.Count)].Id },
+                        OriginCountries = new List<int> { countries[rnd.Next(countries.Count)].Id }
+                    };
+
+                    await AddProductToInventoryDBAsync(productIn);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while adding mock products to inventory.");
                 throw;
             }
         }
