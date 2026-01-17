@@ -1,12 +1,8 @@
 ﻿using Application.DTOs.Image;
+using Application.DTOs.Outbound;
 using Application.Interfaces.Commands;
 using Application.Interfaces.Queries;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Identity.Client;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace HomeInvManagementAPI.Controllers
 {
@@ -14,37 +10,47 @@ namespace HomeInvManagementAPI.Controllers
     [ApiController]
     public class ImageController : Controller
     {
-        // Injections 
+        // Injections
         private readonly ILogger<ImageController> _logger;
         private readonly IImageCommand _imageCommand;
         private readonly IImageQuery _imageQuery;
+        private readonly IConfiguration _configuration;
 
-        public ImageController(ILogger<ImageController> logger, IImageCommand imageCommand, IImageQuery imageQuery)
+        // Configuration keys
+        private readonly List<string> _permImageUploadExt;
+        private readonly long _maxImageUploadSize;
+
+        public ImageController(ILogger<ImageController> logger, IImageCommand imageCommand, IImageQuery imageQuery, IConfiguration configuration)
         {
             _logger = logger;
             _imageCommand = imageCommand;
             _imageQuery = imageQuery;
+            _configuration = configuration;
+
+            _permImageUploadExt = _configuration.GetSection("ImageController:PermittedUploadExt").Get<List<string>>() ?? throw new InvalidOperationException("ImageController: Permitted extensions for image upload are missing.");
+            _maxImageUploadSize = _configuration.GetValue<long?>("ImageController:MaxImgSizeBytes") ?? throw new InvalidOperationException("ImageController: Max image upload size not set");
         }
 
         [HttpPost("upload")]
-        public async Task<ActionResult> UploadImageToDBAsync(IFormFile image)
+        [ProducesResponseType<ImageUploadOutDTO>(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
+        [ProducesResponseType(StatusCodes.Status413PayloadTooLarge)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ImageUploadOutDTO>> UploadImageToDBAsync(IFormFile image)
         {
             try
             {
-                List<string> permittedExtensions = new() { ".jpg", ".jpeg", ".png" };
-                var fileSizeLimit = 5 * 1024 * 1024; // 5 MB
+                // Supported extensions and size limit
+                List<string> permittedExtensions = _permImageUploadExt;
+                long fileSizeLimit = _maxImageUploadSize;
 
-                var imageExt = Path.GetExtension(image.FileName).ToLowerInvariant();
+                string? imageExt = Path.GetExtension(image.FileName).ToLowerInvariant();
 
                 if (string.IsNullOrEmpty(imageExt) || !permittedExtensions.Contains(imageExt))
-                {
-                    return BadRequest("Invalid image format. Only .jpg, .jpeg, and .png are allowed.");
-                }
+                    return StatusCode(StatusCodes.Status415UnsupportedMediaType);
 
                 if (image.Length > fileSizeLimit)
-                {
-                    return BadRequest("File size exceeds the 5 MB limit.");
-                }
+                    return StatusCode(StatusCodes.Status413PayloadTooLarge);
 
                 // Read image and convert to Base64
                 using var memoryStream = new MemoryStream();
@@ -57,37 +63,42 @@ namespace HomeInvManagementAPI.Controllers
                     Extension = imageExt
                 };
 
-                var outDTO = await _imageCommand.UploadImageAsync(inputDto);
+                ImageUploadOutDTO outDTO = await _imageCommand.UploadImageAsync(inputDto);
 
-                return StatusCode(StatusCodes.Status200OK, outDTO);
+                return StatusCode(StatusCodes.Status201Created, outDTO);
             }
             catch (Exception ex)
             {
-                return BadRequest($"Internal server error: {ex.Message}");
+                return StatusCode(StatusCodes.Status400BadRequest);
             }
         }
 
         [HttpGet("download/{imageId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DownloadImageFromDBAsync([FromRoute] int imageId)
         {
             try
             {
                 if (imageId <= 0)
-                    return BadRequest("Invalid image ID.");
+                    return StatusCode(StatusCodes.Status400BadRequest, "ImageId must be above 0");
 
                 var inDTO = new ImageDownloadInDTO
                 {
                     ImageId = imageId
                 };
 
-                var outDTO = await _imageQuery.DownloadImageAsync(inDTO);
+                ImageDownloadOutDTO outDTO = await _imageQuery.DownloadImageAsync(inDTO);
 
                 if (outDTO?.ImageBytes == null || outDTO.ImageBytes.Length == 0)
-                    return NotFound("Image not found.");
+                    return StatusCode(StatusCodes.Status404NotFound, $"ImageId with id {imageId} was not found");
 
-                var fileName = $"image_{imageId}{outDTO.Extension}";
+                // Set appropriate content type based on the image extension & file name
+                string? fileName = $"image_{imageId}{outDTO.Extension}";
 
-                var selectedContentType = outDTO.Extension.ToLowerInvariant() switch
+                // Create a mapping of extensions to content types.
+                string? selectedContentType = outDTO.Extension.ToLowerInvariant() switch
                 {
                     ".jpg" or ".jpeg" => "image/jpeg",
                     ".png" => "image/png",
@@ -96,41 +107,46 @@ namespace HomeInvManagementAPI.Controllers
                     _ => "application/octet-stream"
                 };
 
-                return File(
-                    fileContents: outDTO.ImageBytes,
-                    contentType: selectedContentType,
-                    fileDownloadName: fileName
-                );
+                FileContentResult fileResult = File(fileContents: outDTO.ImageBytes, contentType: selectedContentType,fileDownloadName: fileName);
+
+                return StatusCode(StatusCodes.Status200OK, fileResult);
             }
             catch (Exception ex)
             {
-                return BadRequest($"Internal server error: {ex.Message}");
+                return StatusCode(StatusCodes.Status400BadRequest, $"Internal server error: {ex.Message}");
             }
         }
 
         [HttpDelete("delete/{imageId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> DeleteImageFromDBAsync([FromRoute] int imageId)
         {
             try
             {
                 if (imageId <= 0)
-                    return BadRequest("Invalid image ID.");
+                    return StatusCode(StatusCodes.Status400BadRequest, "ImageId must be above 0");
 
                 var inDTO = new ImageDeleteInDTO
                 {
                     ImageId = imageId
                 };
 
-                var outDTO = await _imageCommand.DeleteImageAsync(inDTO);
+                ImageDeleteOutDTO? outDTO = await _imageCommand.DeleteImageAsync(inDTO);
+
+                if (outDTO == null)
+                    return StatusCode(StatusCodes.Status404NotFound, $"Image with id {imageId} was not found and therefore not deleted.");
 
                 if (!outDTO.IsDeleted)
-                    return NotFound("Image not found or could not be deleted.");
+                    return StatusCode(StatusCodes.Status409Conflict, $"Image could not be deleted on server. It may still be in use by other objects.");
 
-                return StatusCode(StatusCodes.Status200OK, outDTO);
+                return StatusCode(StatusCodes.Status204NoContent, outDTO);
             }
             catch (Exception ex)
             {
-                return BadRequest($"Internal server error: {ex.Message}");
+                return StatusCode(StatusCodes.Status400BadRequest, $"Internal server error: {ex.Message}");
             }
         }
     }

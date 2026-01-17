@@ -9,6 +9,6 @@ namespace Application.Interfaces.Repositories.ImageHandler
 {
     public interface IImageDeleteRepository
     {
-        public Task<ImageDeleteOutDTO> DeleteImageAsync(ImageDeleteInDTO inDTO);
+        public Task<ImageDeleteOutDTO?> DeleteImageAsync(ImageDeleteInDTO inDTO);
     }
 }

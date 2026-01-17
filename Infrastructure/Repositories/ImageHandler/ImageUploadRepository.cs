@@ -18,6 +18,8 @@ namespace Infrastructure.Repositories.ImageHandler
             _logger = logger;
         }
 
+        // Notes: The "IsAssigned" prop. will be set further down the line when the image is linked to a product. 
+        // The URL generation is also to be implemented later.
         public async Task<ImageUploadOutDTO> UploadImageAsync(ImageUploadInDTO inDTO)
         {
             try
@@ -36,7 +38,8 @@ namespace Infrastructure.Repositories.ImageHandler
                 {
                     ImageId = newImage.Id,
                     IsUploaded = true,
-                    URL = null // TODO: Generate URL.
+                    URL = null, // TODO: Generate URL.
+                    IsAssigned = false
                 };
 
                 return outDTO;

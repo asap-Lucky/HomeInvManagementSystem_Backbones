@@ -22,24 +22,19 @@ namespace Infrastructure.Repositories.ImageHandler
             _logger = logger;
         }
 
-        public async Task<ImageDeleteOutDTO> DeleteImageAsync(ImageDeleteInDTO inDTO)
+        public async Task<ImageDeleteOutDTO?> DeleteImageAsync(ImageDeleteInDTO inDTO)
         {
             try
             {
                 var image = await _context.Images.FindAsync(inDTO.ImageId);
-                
+
                 if (image == null)
-                {
-                    return new ImageDeleteOutDTO
-                    {
-                        ImageId = inDTO.ImageId,
-                        IsDeleted = false
-                    };
-                }
+                    return null;
 
                 _context.Images.Remove(image);
-
                 await _context.SaveChangesAsync();
+
+
 
                 return new ImageDeleteOutDTO
                 {

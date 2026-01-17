@@ -34,11 +34,11 @@ namespace Application.Commands
             }
         }
 
-        public async Task<ImageDeleteOutDTO> DeleteImageAsync(ImageDeleteInDTO inDTO)
+        public async Task<ImageDeleteOutDTO?> DeleteImageAsync(ImageDeleteInDTO inDTO)
         {
             try
             {
-                ImageDeleteOutDTO outDTO = await _imageDeleteRepo.DeleteImageAsync(inDTO);
+                ImageDeleteOutDTO? outDTO = await _imageDeleteRepo.DeleteImageAsync(inDTO);
                 return outDTO;
             }
             catch (Exception)

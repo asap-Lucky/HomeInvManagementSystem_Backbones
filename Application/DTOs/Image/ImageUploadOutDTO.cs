@@ -11,5 +11,6 @@ namespace Application.DTOs.Image
         public int ImageId { get; set; }
         public bool IsUploaded { get; set; }
         public string? URL { get; set; }
+        public bool IsAssigned { get; set; }
     }
 }
