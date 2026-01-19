@@ -46,7 +46,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                     foreach (var locationId in createInDTO.Locations)
                     {
                         // Updating the count of the ammount in a location.
-                        var existingEntry = await _context.ProductLocations
+                        var existingEntry = await _context.ProductLocations.AsNoTracking()
                             .FirstOrDefaultAsync(pl => pl.LocationId == locationId && pl.ProductId == product.Id);
 
                         if (existingEntry == null)
@@ -60,17 +60,12 @@ namespace Infrastructure.Repositories.InventoryManagement
                                 UpdatedAt = DateTime.UtcNow
                             });
                         }
-                        else
-                        {
-                            existingEntry.Amount += 1;
-                            existingEntry.UpdatedAt = DateTime.UtcNow;
-                        }
                     }
                 }
 
                 if (createInDTO.OriginCountries != null)
                 {
-                    var countryListDB = await _context.Countries.ToListAsync();
+                    var countryListDB = await _context.Countries.AsNoTracking().ToListAsync();
 
                     foreach (var countryId in createInDTO.OriginCountries)
                     {
@@ -87,7 +82,7 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                 if (createInDTO.Suppliers != null)
                 {
-                    var supplierListDB = await _context.Suppliers.ToListAsync();
+                    var supplierListDB = await _context.Suppliers.AsNoTracking().ToListAsync();
 
                     foreach (var supplierId in createInDTO.Suppliers)
                     {
@@ -105,7 +100,7 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                 if (createInDTO.Tags != null)
                 {
-                    var tagListDB = await _context.Tags.ToListAsync();
+                    var tagListDB = await _context.Tags.AsNoTracking().ToListAsync();
 
                     foreach (var tagId in createInDTO.Tags)
                     {
