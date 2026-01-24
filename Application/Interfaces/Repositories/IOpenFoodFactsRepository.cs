@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Outbound;
+﻿using Application.DTOs.Outbound.API;
 
 namespace HomeInvManagementAPI.Interfaces.Repositories
 {

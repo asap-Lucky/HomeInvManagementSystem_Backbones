@@ -64,7 +64,6 @@ namespace Infrastructure.Repositories.InventoryManagement
                         ProductName = product.Name,
                         Category = categories?.FirstOrDefault(ctgr => ctgr.Id == product?.CategoryId)?.Name,
                         Brand = product.Brand,
-                        ExpirationDate = product.ExpiresAt,
                         CreatedAt = product.CreatedAt,
                         UpdatedAt = product.UpdatedAt
                     };
@@ -133,7 +132,6 @@ namespace Infrastructure.Repositories.InventoryManagement
                     ImageBLOB = product.Image != null ? Encoding.UTF8.GetString(product.Image.Data) : null,
                     Category = categories?.FirstOrDefault(ctgr => ctgr.Id == product?.CategoryId)?.Name,
                     Brand = product.Brand,
-                    ExpirationDate = product.ExpiresAt,
                     CreatedAt = product.CreatedAt,
                     UpdatedAt = product.UpdatedAt
                 };

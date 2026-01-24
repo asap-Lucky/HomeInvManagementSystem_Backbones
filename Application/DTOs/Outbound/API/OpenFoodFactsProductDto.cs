@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Application.DTOs.Outbound
+namespace Application.DTOs.Outbound.API
 {
     public class OpenFoodFactsProductDto
     {

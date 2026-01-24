@@ -10,6 +10,6 @@ namespace Application.Interfaces.Repositories.InventoryManagement
 {
     public interface IProductUpdateRepository
     {
-        Task<UpdateProductDetailsOutDTO> UpdateProductDetailsDBAsync(UpdateProductDetailsInDTO incomingDTO);
+        Task<UpdateProductDetailsOutDTO> UpdateProductDetailsDBAsync(int productId, UpdateProductDetailsInDTO incomingDTO);
     }
 }

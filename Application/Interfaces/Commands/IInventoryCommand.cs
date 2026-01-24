@@ -14,6 +14,6 @@ namespace Application.Interfaces.Commands
 
         public Task AddMockProductsAsync(int mockAmmount);
 
-        public Task<UpdateProductDetailsOutDTO> UpdateProductDetailsAsync(UpdateProductDetailsInDTO updateProdInDTO);
+        public Task<UpdateProductDetailsOutDTO> UpdateProductDetailsAsync(int productId, UpdateProductDetailsInDTO updateProdInDTO);
     }
 }

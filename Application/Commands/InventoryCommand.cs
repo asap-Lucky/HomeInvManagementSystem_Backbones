@@ -45,11 +45,11 @@ namespace Application.Commands
             }
         }
 
-        public async Task<UpdateProductDetailsOutDTO> UpdateProductDetailsAsync(UpdateProductDetailsInDTO updateProdInDTO)
+        public async Task<UpdateProductDetailsOutDTO> UpdateProductDetailsAsync(int productId, UpdateProductDetailsInDTO updateProdInDTO)
         {
             try
             {
-                var updateProduct = await _updateProductRepo.UpdateProductDetailsDBAsync(updateProdInDTO);
+                var updateProduct = await _updateProductRepo.UpdateProductDetailsDBAsync(productId, updateProdInDTO);
                 return updateProduct;
             }
             catch (Exception)

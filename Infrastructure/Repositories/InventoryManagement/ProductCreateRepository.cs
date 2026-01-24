@@ -30,10 +30,9 @@ namespace Infrastructure.Repositories.InventoryManagement
                 var product = new Models.HomeInv.Product
                 {
                     Name = createInDTO.ProductName,
-                    CategoryId = createInDTO.Category,
+                    CategoryId = createInDTO.CategoryId,
                     Barcode = createInDTO.EANCode,
                     Brand = createInDTO.Brand,
-                    ExpiresAt = createInDTO.ExpirationDate,
                     ImageId = createInDTO.ImageId,
                 };
 
@@ -57,7 +56,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                                 ProductId = product.Id,
                                 LocationId = locationId,
                                 Amount = 1,
-                                UpdatedAt = DateTime.UtcNow
+                                UpdatedAt = DateTime.Now
                             });
                         }
                     }
@@ -148,7 +147,6 @@ namespace Infrastructure.Repositories.InventoryManagement
                     ProductName = savedProduct.Name,
                     EanCode = savedProduct.Barcode,
                     Brand = savedProduct.Brand,
-                    ExpirationDate = savedProduct.ExpiresAt,
                     CreatedAt = savedProduct.CreatedAt,
                     UpdatedAt = savedProduct.UpdatedAt,
                     ImageId = savedProduct.ImageId
@@ -268,10 +266,9 @@ namespace Infrastructure.Repositories.InventoryManagement
                     var productIn = new CreateProductInDTO
                     {
                         ProductName = productNames[rnd.Next(productNames.Count)],
-                        Category = categories[rnd.Next(categories.Count)].Id,
+                        CategoryId = categories[rnd.Next(categories.Count)].Id,
                         EANCode = rnd.Next(111111111, 999999999).ToString(),
                         Brand = brands[rnd.Next(brands.Count)],
-                        ExpirationDate = DateTime.UtcNow.AddDays(rnd.Next(1, 365)),
                         ImageId = rnd.Next(1, 5),
                         Locations = new List<int> { locations[rnd.Next(locations.Count)].Id },
                         Tags = new List<int> { tags[rnd.Next(tags.Count)].Id },

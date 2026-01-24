@@ -4,29 +4,20 @@ namespace HomeInvManagementAPI.DTOs.Request
 {
     public class UpdateProductDetailsRequest
     {
-        public int ProductId { get; set; }
-
         public string ProductName { get; set; } = null!;
 
         public string? EanCode { get; set; }
 
         public string? Brand { get; set; }
 
-        public DateTime? ExpirationDate { get; set; }
+        public int CategoryId { get; set; }
 
-        public DateTime UpdatedAt { get; set; }
+        public int? ImageId { get; set; }
 
-        public ProductCategoryDTO Category { get; set; } = null!;
+        public List<int>? OriginCountries { get; set; }
 
-        public ProductImageDTO? ImageBLOB { get; set; }
+        public List<int>? Suppliers { get; set; }
 
-        public List<ProductLocationDTO>? Locations { get; set; }
-
-        // NOTE: One product can be produced in multiple countries. Example: Nuts collected in Bolivia, packaged for Lidl in Germany.
-        public List<ProductCountryDTO>? OriginCountries { get; set; }
-
-        public List<ProductSupplierDTO>? Suppliers { get; set; }
-
-        public List<ProductTagDTO>? Tags { get; set; }
+        public List<int>? Tags { get; set; }
     }
 }

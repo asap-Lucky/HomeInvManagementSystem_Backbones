@@ -13,17 +13,15 @@ namespace Application.DTOs.Outbound
 
         public string ProductName { get; set; } = null!;
 
+        public int? ImageId { get; set; }
+
         public string? EanCode { get; set; }
 
         public string? Brand { get; set; }
 
-        public DateTime? ExpirationDate { get; set; }
-
         public DateTime UpdatedAt { get; set; }
 
         public ProductCategoryDTO Category { get; set; } = null!;
-
-        public ProductImageDTO? Image { get; set; }
 
         public List<ProductLocationDTO>? Locations { get; set; }
 

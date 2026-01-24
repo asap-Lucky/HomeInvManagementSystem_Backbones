@@ -111,13 +111,12 @@ namespace HomeInvManagementAPI.Controllers
                 CreateProductInDTO createItemDTO = new()
                 {
                     ProductName = productCreateRequest.ProductName,
-                    Category = (int)productCreateRequest.Category,
+                    CategoryId = (int)productCreateRequest.Category,
                     Locations = productCreateRequest.Locations
                                               .Select(location => (int)location)
                                               .ToList(),
                     EANCode = productCreateRequest.EANCode,
                     Brand = productCreateRequest.Brand,
-                    ExpirationDate = productCreateRequest.ExpirationDate,
                     OriginCountries = productCreateRequest.OriginCountries,
                     Suppliers = productCreateRequest.Suppliers,
                     Tags = productCreateRequest.Tags
@@ -131,7 +130,6 @@ namespace HomeInvManagementAPI.Controllers
                     ProductName = addedItemDTO.ProductName,
                     EanCode = addedItemDTO.EanCode,
                     Brand = addedItemDTO.Brand,
-                    ExpirationDate = addedItemDTO.ExpirationDate,
                     CreatedAt = addedItemDTO.CreatedAt,
                     UpdatedAt = addedItemDTO.UpdatedAt,
                     Category = addedItemDTO.Category,
@@ -151,23 +149,45 @@ namespace HomeInvManagementAPI.Controllers
             }
         }
 
-        [HttpPut("{productid}")]
+        [HttpPut("{productId}")]
         [ProducesResponseType<UpdateProductDetailsResponse>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<UpdateProductDetailsResponse>> UpdateProductInfoAsync([FromRoute] int productId, [FromRoute] string location, [FromBody] UpdateProductDetailsInDTO productUpdateRequest)
+        public async Task<ActionResult<UpdateProductDetailsResponse>> UpdateProductInfoAsync([FromRoute] int productId, [FromBody] UpdateProductDetailsRequest productUpdateRequest)
         {
             try
             {
-                if (productId == null || productId < 0)
+                if (productId < 0)
                     return StatusCode(StatusCodes.Status400BadRequest, "Invalid product id. Make sure the product id is filled out and is valid id bigger than 0");
 
-                // TODO: Validate other properties if needed. Move this validation later to Domain.
-                if (!Enum.TryParse<Domain.Enums.ProductLocation>(location, true, out Domain.Enums.ProductLocation locationEnum))
-                    return BadRequest("Invalid location. Please define a valid location");
-                    
-                var updatedProductDTO = await _inventoryCommand.UpdateProductDetailsAsync(productUpdateRequest);
+                UpdateProductDetailsInDTO inDTO = new()
+                {
+                    ProductName = productUpdateRequest.ProductName,
+                    EanCode = productUpdateRequest.EanCode,
+                    Brand = productUpdateRequest.Brand,
+                    CategoryId = productUpdateRequest.CategoryId,
+                    ImageId = productUpdateRequest.ImageId,
+                    OriginCountries = productUpdateRequest.OriginCountries,
+                    Suppliers = productUpdateRequest.Suppliers,
+                    Tags = productUpdateRequest.Tags
+                };
 
-                return Ok(updatedProductDTO);
+                var outDTO = await _inventoryCommand.UpdateProductDetailsAsync(productId, inDTO);
+
+                UpdateProductDetailsResponse productUpdateResponse = new()
+                {
+                    ProductId = outDTO.ProductId,
+                    ProductName = outDTO.ProductName,
+                    EanCode = outDTO.EanCode,
+                    Brand = outDTO.Brand,
+                    UpdatedAt = outDTO.UpdatedAt,
+                    Category = outDTO.Category,
+                    ImageId = outDTO.ImageId,
+                    OriginCountries = outDTO.OriginCountries,
+                    Suppliers = outDTO.Suppliers,
+                    Tags = outDTO.Tags
+                };
+
+                return Ok(productUpdateResponse);
             }
             catch (Exception ex)
             {

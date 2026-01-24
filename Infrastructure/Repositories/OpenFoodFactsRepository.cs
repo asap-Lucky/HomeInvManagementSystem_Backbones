@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Outbound;
+﻿using Application.DTOs.Outbound.API;
 using HomeInvManagementAPI.Interfaces.Repositories;
 using Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;

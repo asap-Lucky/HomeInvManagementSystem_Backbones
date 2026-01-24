@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Application.Interfaces.Queries;
 using Application.DTOs.Outbound;
 using HomeInvManagementAPI.Mappers;
+using Application.DTOs.Outbound.API;
 
 namespace Application.Queries
 {
