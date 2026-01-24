@@ -10,6 +10,8 @@ namespace Application.DTOs.Inbound
 {
     public class UpdateProductDetailsInDTO
     {
+        public int ProductId { get; set; }
+
         public  string ProductName { get; set; } = null!;
 
         public string? EanCode { get; set; }    

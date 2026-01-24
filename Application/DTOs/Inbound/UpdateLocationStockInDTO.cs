@@ -4,14 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Application.DTOs
+namespace Application.DTOs.Inbound
 {
-    public class ProductLocationDTO
+    public class UpdateLocationStockInDTO
     {
         public int LocationId { get; set; }
 
-        public string LocationName { get; set; } = null!;
+        public int ProductId { get; set; }
 
-        public int Quantity { get; set; }
+        public int Delta { get; set; }
     }
 }

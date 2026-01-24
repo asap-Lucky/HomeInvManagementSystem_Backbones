@@ -161,6 +161,7 @@ namespace HomeInvManagementAPI.Controllers
 
                 UpdateProductDetailsInDTO inDTO = new()
                 {
+                    ProductId = productId,
                     ProductName = productUpdateRequest.ProductName,
                     EanCode = productUpdateRequest.EanCode,
                     Brand = productUpdateRequest.Brand,
@@ -171,7 +172,7 @@ namespace HomeInvManagementAPI.Controllers
                     Tags = productUpdateRequest.Tags
                 };
 
-                var outDTO = await _inventoryCommand.UpdateProductDetailsAsync(productId, inDTO);
+                var outDTO = await _inventoryCommand.UpdateProductDetailsAsync(inDTO);
 
                 UpdateProductDetailsResponse productUpdateResponse = new()
                 {
@@ -187,7 +188,7 @@ namespace HomeInvManagementAPI.Controllers
                     Tags = outDTO.Tags
                 };
 
-                return Ok(productUpdateResponse);
+                return StatusCode(StatusCodes.Status200OK, productUpdateResponse);
             }
             catch (Exception ex)
             {
@@ -195,15 +196,36 @@ namespace HomeInvManagementAPI.Controllers
             }
         }
 
-        // TODO: Read docs about PATCH method and implement it properly.
-        [HttpPatch("{location}/{productid}")]
-        [ProducesResponseType<ProductQuantityResponse>(StatusCodes.Status200OK)]
+        [HttpPatch("{location}/stock/{productId}")]
+        [ProducesResponseType<UpdateLocationStockResponse>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ProductQuantityResponse>> UpdateStockQuantityOnLocationAsync([FromRoute] int productId, [FromRoute] string location, [FromBody] JsonPatchDocument<UpdateInvQuantityRequest> quantityUpdateRequest)
+        public async Task<ActionResult<UpdateLocationStockResponse>> UpdateStockQuantityOnLocationAsync([FromRoute] int productId, [FromRoute] string location, [FromBody] UpdateLocationStockRequest stockUpdateLocationRequest)
         {
             try
             {
-                throw new NotImplementedException();
+                if (productId < 0)
+                    return StatusCode(StatusCodes.Status400BadRequest, "Invalid product id. Make sure the product id is filled out and is valid id bigger than 0");
+
+                if (!Enum.TryParse<Domain.Enums.ProductLocation>(location, true, out Domain.Enums.ProductLocation locationEnum))
+                    return StatusCode(StatusCodes.Status400BadRequest, "Invalid location. Please define a valid location");
+
+                UpdateLocationStockInDTO inDTO = new()
+                {
+                    ProductId = productId,
+                    LocationId = (int)locationEnum,
+                    Delta = stockUpdateLocationRequest.Delta
+                };
+
+                var outDTO = await _inventoryCommand.UpdateLocationStockAsync(inDTO);
+
+                UpdateLocationStockResponse productQuantityResponse = new()
+                {
+                    ProductId = outDTO.ProductId,
+                    Location = outDTO.Location,
+                    Quantity = outDTO.Quantity
+                };
+
+                return StatusCode(StatusCodes.Status200OK, productQuantityResponse);
             }
             catch (Exception ex)
             {
@@ -225,5 +247,22 @@ namespace HomeInvManagementAPI.Controllers
                 return BadRequest($"Internal server error: {ex.Message}");
             }
         }
+
+        #region MockEndpoints
+        #endregion
+
+        #region Stored Procedures
+        public async Task<ActionResult<UpdateLocationStockResponse>> StoredProcedureupdateStockQuantityOnLocationAsync([FromRoute] int productId, [FromRoute] string location, [FromBody] JsonPatchDocument<UpdateLocationStockRequest> quantityUpdateRequest)
+        {
+            try
+            {
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Internal server error: {ex.Message}");
+            }
+        }
+        #endregion
     }
 }

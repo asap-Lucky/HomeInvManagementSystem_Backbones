@@ -9,9 +9,9 @@ public partial class ProductLocation
 
     public int LocationId { get; set; }
 
-    public int Amount { get; set; }
+    public int Quantity { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 
     public virtual Location Location { get; set; } = null!;
 

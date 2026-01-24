@@ -55,7 +55,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                             {
                                 ProductId = product.Id,
                                 LocationId = locationId,
-                                Amount = 1,
+                                Quantity = 1,
                                 UpdatedAt = DateTime.Now
                             });
                         }
@@ -177,7 +177,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                             LocationName = _context?.Locations?.Where(l => l.Id == location.LocationId)
                                                              .Select(l => l.Name)
                                                              .FirstOrDefault() ?? throw new Exception("Creation of new product has invalid location set."),
-                            Quantity = location.Amount
+                            Quantity = location.Quantity
                         };
 
                         if (createOutDto.Locations == null)

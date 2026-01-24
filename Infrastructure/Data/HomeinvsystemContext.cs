@@ -120,7 +120,7 @@ public partial class HomeinvsystemContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name)
-                .HasMaxLength(25)
+                .HasMaxLength(50)
                 .HasColumnName("name");
         });
 
@@ -245,10 +245,8 @@ public partial class HomeinvsystemContext : DbContext
 
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.LocationId).HasColumnName("location_id");
-            entity.Property(e => e.Amount).HasColumnName("amount");
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
             entity.Property(e => e.UpdatedAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime")
                 .HasColumnName("updated_at");
 
