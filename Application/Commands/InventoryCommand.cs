@@ -32,19 +32,6 @@ namespace Application.Commands
             }
         }
 
-        // TODO: Delete this later
-        public async Task AddMockProductsAsync(int mockAmmount)
-        {
-            try
-            {
-                await _createProductRepo.AddMockProductsToDBAsync(mockAmmount);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
         public async Task<UpdateProductDetailsOutDTO> UpdateProductDetailsAsync(UpdateProductDetailsInDTO updateProdInDTO)
         {
             try
@@ -70,5 +57,32 @@ namespace Application.Commands
                 throw;
             }
         }
+
+        public async Task<BatchUpdateLocationStockOutDTO> BatchUpdateLocationStockAsync(BatchUpdateLocationStockInDTO batchUpdateLocationStockInDTO)
+        {
+            try
+            {
+                var updateProducts = await _updateProductRepo.BatchUpdateLocationStockDBAsync(batchUpdateLocationStockInDTO);
+                return updateProducts;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        #region Mocked Methods
+        public async Task AddMockProductsAsync(int mockAmmount)
+        {
+            try
+            {
+                await _createProductRepo.AddMockProductsToDBAsync(mockAmmount);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+        #endregion
     }
 }

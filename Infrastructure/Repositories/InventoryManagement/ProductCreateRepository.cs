@@ -22,6 +22,7 @@ namespace Infrastructure.Repositories.InventoryManagement
             _logger = logger;
         }
 
+        // TODO: Consider making this a transaction to ensure all or nothing is saved.
         public async Task<CreateProductOutDTO> AddProductToInventoryDBAsync(CreateProductInDTO createInDTO)
         {
             try
@@ -176,8 +177,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                             LocationId = location.LocationId,
                             LocationName = _context?.Locations?.Where(l => l.Id == location.LocationId)
                                                              .Select(l => l.Name)
-                                                             .FirstOrDefault() ?? throw new Exception("Creation of new product has invalid location set."),
-                            Quantity = location.Quantity
+                                                             .FirstOrDefault() ?? throw new Exception("Creation of new product has invalid location set.")
                         };
 
                         if (createOutDto.Locations == null)
@@ -253,6 +253,8 @@ namespace Infrastructure.Repositories.InventoryManagement
             {
                 Random rnd = new();
 
+                var rndNumb = rnd.Next(100000000, 999999999).ToString();
+
                 var productNames = new List<string> { "Milk", "Bread", "Eggs", "Butter", "Cheese", "Yogurt", "Apples", "Bananas", "Chicken", "Beef" };
                 var brands = new List<string> { "BrandA", "BrandB", "BrandC", "BrandD" };
                 var locations = await _context.Locations.AsNoTracking().ToListAsync();
@@ -275,6 +277,8 @@ namespace Infrastructure.Repositories.InventoryManagement
                         Suppliers = new List<int> { suppliers[rnd.Next(suppliers.Count)].Id },
                         OriginCountries = new List<int> { countries[rnd.Next(countries.Count)].Id }
                     };
+
+                    productIn.ProductName += rndNumb;
 
                     await AddProductToInventoryDBAsync(productIn);
                 }

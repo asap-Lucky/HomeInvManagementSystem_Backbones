@@ -120,20 +120,23 @@ namespace Infrastructure.Repositories.InventoryManagement
         {
             try
             {
-                var lp = await _context.ProductLocations
-                    .Include(lp => lp.Location)
-                    .FirstOrDefaultAsync(lp => lp.LocationId == incomingDTO.LocationId && lp.ProductId == incomingDTO.ProductId);
+                var pl = await _context.ProductLocations
+                    .Include(pl => pl.Location)
+                    .FirstOrDefaultAsync(pl => pl.LocationId == incomingDTO.LocationId && pl.ProductId == incomingDTO.ProductId);
 
                 // Validation of existing LocationProduct entry - Otherwise add new entry if not found.
-                if (lp == null)
+                if (pl == null)
                 {
                     var locationExists = await _context.Locations.AnyAsync(l => l.Id == incomingDTO.LocationId);
                     var productExists = await _context.Products.AnyAsync(p => p.Id == incomingDTO.ProductId);
 
-                    if (!locationExists || !productExists)
-                        throw new Exception("Invalid ProductId or LocationId.");
+                    if (!locationExists)
+                        throw new Exception("Invalid ProductId");
 
-                    lp = new Models.HomeInv.ProductLocation
+                    if (!productExists)
+                        throw new Exception("Invalid LocationId.");
+
+                    pl = new Models.HomeInv.ProductLocation
                     {
                         LocationId = incomingDTO.LocationId,
                         ProductId = incomingDTO.ProductId,
@@ -141,31 +144,31 @@ namespace Infrastructure.Repositories.InventoryManagement
                         UpdatedAt = DateTime.Now
                     };
 
-                    _context.ProductLocations.Add(lp);
+                    _context.ProductLocations.Add(pl);
 
                     // Load information about the Location for the outgoing DTO.
-                    lp.Location = await _context.Locations.FirstAsync(l => l.Id == incomingDTO.LocationId);
+                    pl.Location = await _context.Locations.FirstAsync(l => l.Id == incomingDTO.LocationId);
                 }
 
-                int newQty = lp.Quantity + incomingDTO.Delta;
+                int newQty = pl.Quantity + incomingDTO.Delta;
 
                 if (newQty < 0)
                     throw new Exception("Resulting quantity cannot be negative.");
 
-                lp.Quantity = newQty;
-                lp.UpdatedAt = DateTime.Now;
+                pl.Quantity = newQty;
+                pl.UpdatedAt = DateTime.Now;
 
                 await _context.SaveChangesAsync();
-                
+
                 return new UpdateLocationStockOutDTO
                 {
-                    ProductId = lp.ProductId,
+                    ProductId = pl.ProductId,
                     Location = new ProductLocationDTO
                     {
-                        LocationId = lp.Location.Id,
-                        LocationName = lp.Location.Name
+                        LocationId = pl.Location.Id,
+                        LocationName = pl.Location.Name
                     },
-                    Quantity = lp.Quantity
+                    Quantity = pl.Quantity
                 };
             }
             catch (Exception ex)
@@ -175,25 +178,34 @@ namespace Infrastructure.Repositories.InventoryManagement
             }
         }
 
-        //public async Task<OutDTO> UpdateProductQuantityDBAsync(int productId, int quantityChange)
-        //{
-        //    try
-        //    {
-        //        var productDB = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-        //        if (productDB == null)
-        //            throw new Exception("Could not update product quantity due to id not existing in system.");
-        //        productDB.Quantity += quantityChange;
-        //        productDB.UpdatedAt = DateTime.Now;
-        //        await _context.SaveChangesAsync();
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "An error occurred while updating product quantity in the database.");
-        //        throw;
-        //    }
-        //}
+        public async Task<BatchUpdateLocationStockOutDTO> BatchUpdateLocationStockDBAsync(BatchUpdateLocationStockInDTO incomingDTO)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
 
+            try
+            {
+                var loc = await _context.ProductLocations.FirstOrDefaultAsync(l => l.LocationId == incomingDTO.LocationId);
 
+                if (loc == null)
+                    throw new Exception("Could not find location for batch update.");
+
+                var transactionId = Guid.NewGuid().ToString();
+
+                foreach (var product in loc.Product)
+                {
+                    // Find matching stock delta for product.
+                }
+
+                _context.s
+
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "An error occurred while performing batch update of product quantities on location in the database.");
+                throw;
+            }
+        }
     }
 }

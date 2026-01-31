@@ -74,8 +74,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                         LocationName = _context.Locations
                                               .Where(l => l.Id == pl.LocationId)
                                               .Select(l => l.Name)
-                                              .FirstOrDefault() ?? string.Empty,
-                        Quantity = pl.Amount
+                                              .FirstOrDefault() ?? string.Empty
                     }).ToList();
 
                     productDTO.CountriesOfOrigin = product.Countries.Select(cuntryOri => new ProductCountryDTO
@@ -142,8 +141,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                     LocationName = _context.Locations
                                           .Where(l => l.Id == pl.LocationId)
                                           .Select(l => l.Name)
-                                          .FirstOrDefault() ?? string.Empty,
-                    Quantity = pl.Amount
+                                          .FirstOrDefault() ?? string.Empty
                 }).ToList();
 
                 productDTO.CountriesOfOrigin = product.Countries.Select(cuntryOri => new ProductCountryDTO

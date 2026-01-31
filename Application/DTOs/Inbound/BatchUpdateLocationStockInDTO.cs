@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Application.DTOs
+namespace Application.DTOs.Inbound
 {
-    public class ProductLocationDTO
+    public class BatchUpdateLocationStockInDTO
     {
         public int LocationId { get; set; }
 
-        public string LocationName { get; set; } = null!;
+        public List<StockDeltaItemInDTO> StockDeltas { get; set; } = new();
     }
 }

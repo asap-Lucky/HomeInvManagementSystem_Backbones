@@ -12,10 +12,16 @@ namespace Application.Interfaces.Commands
     {
         Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createProdInDTO);
 
-        Task AddMockProductsAsync(int mockAmmount);
-
         Task<UpdateProductDetailsOutDTO> UpdateProductDetailsAsync(UpdateProductDetailsInDTO updateProdInDTO);
 
         Task<UpdateLocationStockOutDTO> UpdateLocationStockAsync(UpdateLocationStockInDTO updateLocationStockInDTO);
+
+        #region Mocks
+        Task AddMockProductsAsync(int mockAmmount);
+        #endregion
+
+        #region Transactions
+        Task<BatchUpdateLocationStockOutDTO> BatchUpdateLocationStockAsync(BatchUpdateLocationStockInDTO batchUpdateLocationStockInDTO);
+        #endregion
     }
 }

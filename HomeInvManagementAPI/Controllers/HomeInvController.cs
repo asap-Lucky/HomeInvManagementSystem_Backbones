@@ -75,9 +75,7 @@ namespace HomeInvManagementAPI.Controllers
             try
             {
                 if (allLocations)
-                {
                     location = Domain.Enums.ProductLocation.Unassigned.ToString();
-                }
 
                 // Check for valid route parameters (location and source)
                 if (!Enum.TryParse<Domain.Enums.ProductLocation>(location.Trim().Replace(" ", ""), true, out Domain.Enums.ProductLocation locationEnum))
@@ -97,50 +95,48 @@ namespace HomeInvManagementAPI.Controllers
         [HttpPost]
         [ProducesResponseType<CreateProductResponse>(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<CreateProductResponse>> CreateProductInInventoryAsync([FromBody] CreateProductRequest productCreateRequest)
+        public async Task<ActionResult<CreateProductResponse>> CreateProductInInventoryAsync([FromBody] CreateProductRequest request)
         {
             try
             {
-                await _inventoryCommand.AddMockProductsAsync(1);
-                return Ok();
                 // TODO: Imp base request wrapper later to set some values that are needed later.
                 //BaseRequestWrapper<CreateProductRequest> requestWrapper = new()
                 //{
                 //};
 
-                CreateProductInDTO createItemDTO = new()
+                CreateProductInDTO inDTO = new()
                 {
-                    ProductName = productCreateRequest.ProductName,
-                    CategoryId = (int)productCreateRequest.Category,
-                    Locations = productCreateRequest.Locations
+                    ProductName = request.ProductName,
+                    CategoryId = (int)request.Category,
+                    Locations = request.Locations
                                               .Select(location => (int)location)
                                               .ToList(),
-                    EANCode = productCreateRequest.EANCode,
-                    Brand = productCreateRequest.Brand,
-                    OriginCountries = productCreateRequest.OriginCountries,
-                    Suppliers = productCreateRequest.Suppliers,
-                    Tags = productCreateRequest.Tags
+                    EANCode = request.EANCode,
+                    Brand = request.Brand,
+                    OriginCountries = request.OriginCountries,
+                    Suppliers = request.Suppliers,
+                    Tags = request.Tags
                 };
 
-                CreateProductOutDTO addedItemDTO = await _inventoryCommand.AddProductToInventoryAsync(createItemDTO);
+                var outDTO = await _inventoryCommand.AddProductToInventoryAsync(inDTO);
 
-                CreateProductResponse productResponse = new()
+                CreateProductResponse response = new()
                 {
-                    ProductId = addedItemDTO.ProductId,
-                    ProductName = addedItemDTO.ProductName,
-                    EanCode = addedItemDTO.EanCode,
-                    Brand = addedItemDTO.Brand,
-                    CreatedAt = addedItemDTO.CreatedAt,
-                    UpdatedAt = addedItemDTO.UpdatedAt,
-                    Category = addedItemDTO.Category,
-                    ImageId = addedItemDTO.ImageId,
-                    Locations = addedItemDTO?.Locations,
-                    OriginCountries = addedItemDTO?.CountriesOfOrigin,
-                    Suppliers = addedItemDTO?.Suppliers,
-                    Tags = addedItemDTO?.Tags
+                    ProductId = outDTO.ProductId,
+                    ProductName = outDTO.ProductName,
+                    EanCode = outDTO.EanCode,
+                    Brand = outDTO.Brand,
+                    CreatedAt = outDTO.CreatedAt,
+                    UpdatedAt = outDTO.UpdatedAt,
+                    Category = outDTO.Category,
+                    ImageId = outDTO.ImageId,
+                    Locations = outDTO?.Locations,
+                    OriginCountries = outDTO?.CountriesOfOrigin,
+                    Suppliers = outDTO?.Suppliers,
+                    Tags = outDTO?.Tags
                 };
 
-                return StatusCode(StatusCodes.Status201Created, productResponse);
+                return StatusCode(StatusCodes.Status201Created, response);
             }
             catch (Exception ex)
             {
@@ -152,7 +148,8 @@ namespace HomeInvManagementAPI.Controllers
         [HttpPut("{productId}")]
         [ProducesResponseType<UpdateProductDetailsResponse>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<UpdateProductDetailsResponse>> UpdateProductInfoAsync([FromRoute] int productId, [FromBody] UpdateProductDetailsRequest productUpdateRequest)
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<UpdateProductDetailsResponse>> UpdateProductInfoAsync([FromRoute] int productId, [FromBody] UpdateProductDetailsRequest request)
         {
             try
             {
@@ -162,19 +159,19 @@ namespace HomeInvManagementAPI.Controllers
                 UpdateProductDetailsInDTO inDTO = new()
                 {
                     ProductId = productId,
-                    ProductName = productUpdateRequest.ProductName,
-                    EanCode = productUpdateRequest.EanCode,
-                    Brand = productUpdateRequest.Brand,
-                    CategoryId = productUpdateRequest.CategoryId,
-                    ImageId = productUpdateRequest.ImageId,
-                    OriginCountries = productUpdateRequest.OriginCountries,
-                    Suppliers = productUpdateRequest.Suppliers,
-                    Tags = productUpdateRequest.Tags
+                    ProductName = request.ProductName,
+                    EanCode = request.EanCode,
+                    Brand = request.Brand,
+                    CategoryId = request.CategoryId,
+                    ImageId = request.ImageId,
+                    OriginCountries = request.OriginCountries,
+                    Suppliers = request.Suppliers,
+                    Tags = request.Tags
                 };
 
                 var outDTO = await _inventoryCommand.UpdateProductDetailsAsync(inDTO);
 
-                UpdateProductDetailsResponse productUpdateResponse = new()
+                UpdateProductDetailsResponse response = new()
                 {
                     ProductId = outDTO.ProductId,
                     ProductName = outDTO.ProductName,
@@ -188,18 +185,20 @@ namespace HomeInvManagementAPI.Controllers
                     Tags = outDTO.Tags
                 };
 
-                return StatusCode(StatusCodes.Status200OK, productUpdateResponse);
+                return StatusCode(StatusCodes.Status200OK, response);
             }
             catch (Exception ex)
             {
-                return BadRequest($"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Error occurred while updating product details.");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
 
-        [HttpPatch("{location}/stock/{productId}")]
+        [HttpPatch("{location}/{productId}")]
         [ProducesResponseType<UpdateLocationStockResponse>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<UpdateLocationStockResponse>> UpdateStockQuantityOnLocationAsync([FromRoute] int productId, [FromRoute] string location, [FromBody] UpdateLocationStockRequest stockUpdateLocationRequest)
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<UpdateLocationStockResponse>> UpdateStockQuantityOnLocationAsync([FromRoute] int productId, [FromRoute] string location, [FromBody] UpdateLocationStockRequest request)
         {
             try
             {
@@ -213,23 +212,24 @@ namespace HomeInvManagementAPI.Controllers
                 {
                     ProductId = productId,
                     LocationId = (int)locationEnum,
-                    Delta = stockUpdateLocationRequest.Delta
+                    Delta = request.Delta
                 };
 
                 var outDTO = await _inventoryCommand.UpdateLocationStockAsync(inDTO);
 
-                UpdateLocationStockResponse productQuantityResponse = new()
+                UpdateLocationStockResponse response = new()
                 {
                     ProductId = outDTO.ProductId,
                     Location = outDTO.Location,
-                    Quantity = outDTO.Quantity
+                    Quantity = outDTO.Quantity,
                 };
 
-                return StatusCode(StatusCodes.Status200OK, productQuantityResponse);
+                return StatusCode(StatusCodes.Status200OK, response);
             }
             catch (Exception ex)
             {
-                return BadRequest($"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Error occurred while updating stock quantity at location.");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
 
@@ -249,18 +249,64 @@ namespace HomeInvManagementAPI.Controllers
         }
 
         #region MockEndpoints
-        #endregion
-
-        #region Stored Procedures
-        public async Task<ActionResult<UpdateLocationStockResponse>> StoredProcedureupdateStockQuantityOnLocationAsync([FromRoute] int productId, [FromRoute] string location, [FromBody] JsonPatchDocument<UpdateLocationStockRequest> quantityUpdateRequest)
+        [HttpPost("mock/{amount}")]
+        public async Task<ActionResult> AddMockProductsAsync([FromRoute] int amount)
         {
             try
             {
+                await _inventoryCommand.AddMockProductsAsync(amount);
                 return Ok();
             }
             catch (Exception ex)
             {
                 return BadRequest($"Internal server error: {ex.Message}");
+            }
+        }
+        #endregion
+
+        #region Batch Endpoints
+        [HttpPatch("batch/{location}")]
+        [ProducesResponseType<UpdateLocationStockResponse>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<BatchUpdateLocationStockResponse>> BatchUpdateStockAtLocationsAsync([FromRoute] string location, [FromBody] List<BatchUpdateLocationStockRequest> batchUpdateRequest)
+        {
+            try
+            {
+                if (!Enum.TryParse<Domain.Enums.ProductLocation>(location, true, out Domain.Enums.ProductLocation locationEnum))
+                    return BadRequest("Invalid location. Please define a valid location");
+
+                BatchUpdateLocationStockInDTO inDTO = new()
+                {
+                    LocationId = (int)locationEnum,
+                    StockDeltas = batchUpdateRequest.Select(item => new StockDeltaItemInDTO
+                    {
+                        ProductId = item.ProductId,
+                        Delta = item.Delta
+                    }).ToList()
+                };
+
+                var outDTO = await _inventoryCommand.BatchUpdateLocationStockAsync(inDTO);
+
+                BatchUpdateLocationStockResponse response = new()
+                {
+                    Location = outDTO.Location,
+                    UpdatedStocks = outDTO.StockDeltas.Select(item => new StockDeltaItemOutDTO
+                    {
+                        ProductId = item.ProductId,
+                        Delta = item.Delta,
+                        OpeningStock = item.OpeningStock,
+                        ClosingStock = item.ClosingStock,
+                    }).ToList(),
+                    TransactionId = outDTO.TransactionId
+                };
+
+                return StatusCode(StatusCodes.Status200OK, response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while batch updating stock at location.");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
         #endregion
