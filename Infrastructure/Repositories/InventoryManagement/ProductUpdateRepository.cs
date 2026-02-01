@@ -4,6 +4,7 @@ using Application.DTOs.Outbound;
 using Application.Interfaces.Repositories.InventoryManagement;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Repositories.InventoryManagement
@@ -131,10 +132,10 @@ namespace Infrastructure.Repositories.InventoryManagement
                     var productExists = await _context.Products.AnyAsync(p => p.Id == incomingDTO.ProductId);
 
                     if (!locationExists)
-                        throw new Exception("Invalid ProductId");
+                        throw new Exception("Invalid LocationId");
 
                     if (!productExists)
-                        throw new Exception("Invalid LocationId.");
+                        throw new Exception("Invalid ProductId");
 
                     pl = new Models.HomeInv.ProductLocation
                     {
@@ -178,32 +179,112 @@ namespace Infrastructure.Repositories.InventoryManagement
             }
         }
 
-        public async Task<BatchUpdateLocationStockOutDTO> BatchUpdateLocationStockDBAsync(BatchUpdateLocationStockInDTO incomingDTO)
+        public async Task<BatchUpdateLocationStockOutDTO> BatchUpdateLocationStockDBAsync(BatchUpdateLocationStockInDTO request)
         {
             var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                var loc = await _context.ProductLocations.FirstOrDefaultAsync(l => l.LocationId == incomingDTO.LocationId);
+                var location = await _context.Locations.FirstOrDefaultAsync(l => l.Id == request.LocationId) ??
+                               throw new Exception($"Location not found with the location id: {request.LocationId}");
 
-                if (loc == null)
-                    throw new Exception("Could not find location for batch update.");
+                // Validation for if all products being updated exist.
+                await ValidateProductsExistingAsync(request.StockDeltas);
 
-                var transactionId = Guid.NewGuid().ToString();
+                var productIds = request.StockDeltas.Select(x => x.ProductId)
+                                                        .ToList();
 
-                foreach (var product in loc.Product)
+                // Get the all product stocks on the current location
+                var locationStocks = await _context.ProductLocations.Where(pl => pl.LocationId == request.LocationId && productIds.Contains(pl.ProductId))
+                                                                    .ToListAsync();
+
+                // Returning DTO
+                var response = new BatchUpdateLocationStockOutDTO
                 {
-                    // Find matching stock delta for product.
+                    Location = new ProductLocationDTO()
+                    {
+                        LocationId = location.Id,
+                        LocationName = location.Name
+                    },   
+                    TransactionId = transaction.TransactionId.ToString()
+                };
+
+                foreach (var stockChange in request.StockDeltas)
+                {
+                    var stockRow = locationStocks.FirstOrDefault(x => x.ProductId == stockChange.ProductId);
+
+                    if (stockRow == null && stockChange.Delta < 0)
+                        throw new Exception($"Cannot remove stock from a location when no existing stock record is present. Product id: {stockChange.ProductId}");
+
+                    // No existing stock previously -> Add to location
+                    if (stockRow == null)
+                    {
+                        stockRow = new Models.HomeInv.ProductLocation()
+                        {
+                            LocationId = request.LocationId,
+                            ProductId = stockChange.ProductId,
+                            Quantity = 0,
+                            UpdatedAt = DateTime.Now
+                        };
+
+                        _context.ProductLocations.Add(stockRow);
+                        locationStocks.Add(stockRow);
+                    }
+
+                    var openingStock = stockRow.Quantity;
+                    var closingStock = openingStock + stockChange.Delta;
+
+                    // Throw if closing stock is in the negative.
+                    if (closingStock < 0)
+                        throw new Exception($"Insufficient stock for productId {stockRow.ProductId}. OpeningStock={openingStock}, Delta={stockChange.Delta}");
+
+                    stockRow.Quantity = closingStock;
+                    stockRow.UpdatedAt = DateTime.Now;
+
+                    response.StockDeltas.Add(new StockDeltaItemOutDTO()
+                    {
+                        ProductId = stockChange.ProductId,
+                        Delta = stockChange.Delta,
+                        OpeningStock = openingStock,
+                        ClosingStock = closingStock
+                    });
                 }
 
-                _context.s
-
+                await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                return response;
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, "An error occurred while performing batch update of product quantities on location in the database.");
+                _logger.LogError(ex, $"An error occurred while performing batch update of product quantities on location in the database. Transaction Id {transaction.TransactionId.ToString()}");
+                throw;
+            }
+        }
+
+        private async Task ValidateProductsExistingAsync(List<StockDeltaItemInDTO> incomingStockDTO)
+        {
+            try
+            {
+                var requestedProductIds = incomingStockDTO.Select(x => x.ProductId)
+                                                          .Distinct()
+                                                          .ToList();
+
+                // Fetch products that exist
+                var existingProductIds = await _context.Products.Where(x => requestedProductIds.Contains(x.Id))
+                                                                .Select(x => x.Id)
+                                                                .ToListAsync();
+
+                var missingProductsIds = requestedProductIds.Except(existingProductIds)
+                                                            .ToList();
+
+                if (missingProductsIds.Count() > 0)
+                    throw new Exception($"Invalid ProductId(s): {string.Join(", ", missingProductsIds)}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while trying to validate products existing when batch updating.");
                 throw;
             }
         }

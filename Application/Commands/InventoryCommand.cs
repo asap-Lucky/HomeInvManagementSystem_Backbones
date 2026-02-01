@@ -58,11 +58,20 @@ namespace Application.Commands
             }
         }
 
-        public async Task<BatchUpdateLocationStockOutDTO> BatchUpdateLocationStockAsync(BatchUpdateLocationStockInDTO batchUpdateLocationStockInDTO)
+        public async Task<BatchUpdateLocationStockOutDTO> BatchUpdateLocationStockAsync(BatchUpdateLocationStockInDTO dto)
         {
             try
             {
-                var updateProducts = await _updateProductRepo.BatchUpdateLocationStockDBAsync(batchUpdateLocationStockInDTO);
+                // Combine all copies of products with same product id.
+                dto.StockDeltas = dto.StockDeltas.GroupBy(sd => sd.ProductId)
+                                    .Select(g => new StockDeltaItemInDTO
+                                    {
+                                        ProductId = g.Key,
+                                        Delta = g.Sum(sd => sd.Delta)
+                                    })
+                                   .ToList();
+
+                var updateProducts = await _updateProductRepo.BatchUpdateLocationStockDBAsync(dto);
                 return updateProducts;
             }
             catch (Exception)

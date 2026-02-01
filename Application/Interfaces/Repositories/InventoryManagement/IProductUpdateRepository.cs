@@ -13,5 +13,7 @@ namespace Application.Interfaces.Repositories.InventoryManagement
         Task<UpdateProductDetailsOutDTO> UpdateProductDetailsDBAsync(UpdateProductDetailsInDTO incomingDTO);
 
         Task<UpdateLocationStockOutDTO> UpdateLocationStockDBAsync(UpdateLocationStockInDTO incomingDTO);
+
+        Task<BatchUpdateLocationStockOutDTO> BatchUpdateLocationStockDBAsync(BatchUpdateLocationStockInDTO incomingDTO);
     }
 }

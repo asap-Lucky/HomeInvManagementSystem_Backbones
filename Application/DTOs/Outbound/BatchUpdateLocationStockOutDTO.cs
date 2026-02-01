@@ -10,8 +10,10 @@ namespace Application.DTOs.Outbound
     {
         public ProductLocationDTO Location { get; set; } = null!;
 
-        public List<StockDeltaItemOutDTO>? StockDeltas { get; set; }
+        public List<StockDeltaItemOutDTO>? StockDeltas { get; set; } = new();
 
         public string? TransactionId { get; set; }
+
+        public DateTime TransactionTimeStamp => DateTime.Now;
     }
 }
