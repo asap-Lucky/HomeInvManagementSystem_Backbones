@@ -233,13 +233,13 @@ namespace HomeInvManagementAPI.Controllers
             }
         }
 
-        // Remember to handle cascading deletes in the database for related entities.
-        [HttpDelete("{productid}")]
-        public async Task<ActionResult<ProductAggregateDTO>> DeleteProductInInventoryAsync()
+        [HttpDelete("{product}")]
+        public async Task<ActionResult<ProductAggregateDTO>> DeleteProductInInventoryAsync([FromQuery] int id)
         {
             try
             {
-                // NOTE: This will hit the Stored Procedure for getting all the products in the database. Since its a big query to handle otherwise.
+
+
                 return Ok();
             }
             catch (Exception ex)
