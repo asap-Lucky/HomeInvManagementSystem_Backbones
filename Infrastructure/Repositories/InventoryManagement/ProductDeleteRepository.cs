@@ -32,6 +32,9 @@ namespace Infrastructure.Repositories.InventoryManagement
                 // 2. Set the "IsDeleted" to true
                 // 3. Set by default that products that are deleted are not being shown to the user. Set it in the Context file as to what GPT could define.
 
+                // Comment: This should still be a delete since it does not neccesarily delete the ressource, but make it unaccessible 
+                // for the user to access through normal API calls. Thats why step Number 3. Needs to be implemented so it works as such.
+
                 return null;
             }
             catch (Exception ex)
