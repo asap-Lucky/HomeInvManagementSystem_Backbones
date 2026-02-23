@@ -12,11 +12,13 @@ namespace Application.Commands
         // Injections
         private readonly IProductCreateRepository _createProductRepo;
         private readonly IProductUpdateRepository _updateProductRepo;
+        private readonly IProductDeleteRepository _deleteProductRepo;
 
-        public InventoryCommand(IProductCreateRepository createProductRepo, IProductUpdateRepository updateProductRepo)
+        public InventoryCommand(IProductCreateRepository createProductRepo, IProductUpdateRepository updateProductRepo, IProductDeleteRepository productDeleteRepo)
         {
             _createProductRepo = createProductRepo;
             _updateProductRepo = updateProductRepo;
+            _deleteProductRepo = productDeleteRepo;
         }
 
         public async Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createProdInDTO)
@@ -26,7 +28,7 @@ namespace Application.Commands
                 var createProduct = await _createProductRepo.AddProductToInventoryDBAsync(createProdInDTO);
                 return createProduct;
             }
-            catch (Exception)
+            catch
             {
                 throw;
             }
@@ -39,7 +41,7 @@ namespace Application.Commands
                 var updateProduct = await _updateProductRepo.UpdateProductDetailsDBAsync(updateProdInDTO);
                 return updateProduct;
             }
-            catch (Exception)
+            catch
             {
                 throw;
             }
@@ -52,7 +54,7 @@ namespace Application.Commands
                 var updateProduct = await _updateProductRepo.UpdateLocationStockDBAsync(updateLocationStockInDTO);
                 return updateProduct;
             }
-            catch (Exception)
+            catch
             {
                 throw;
             }
@@ -80,6 +82,19 @@ namespace Application.Commands
             }
         }
 
+        public async Task<DeleteProductOutDTO> DeleteProductFromInventoryAsync(DeleteProductInDTO dto)
+        {
+            try
+            {
+                var deletedProduct = await _deleteProductRepo.DeleteProductOnInventoryDBAsync(dto);
+                return deletedProduct;
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         #region Mocked Methods
         public async Task AddMockProductsAsync(int mockAmmount)
         {
@@ -87,7 +102,7 @@ namespace Application.Commands
             {
                 await _createProductRepo.AddMockProductsToDBAsync(mockAmmount);
             }
-            catch (Exception)
+            catch
             {
                 throw;
             }

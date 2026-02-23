@@ -20,9 +20,9 @@ namespace Application.DTOs.Outbound
 
         public DateTime UpdatedAt { get; set; }
 
-        public string? Category { get; set; }
-
         public int? ImageId { get; set; }
+
+        public ProductCategoryDTO Category { get; set; } = null!;
 
         public List<ProductLocationDTO>? Locations { get; set; }
 

@@ -1,6 +1,9 @@
-﻿using Application.DTOs.Inbound;
+﻿using Application.DTOs;
+using Application.DTOs.Inbound;
 using Application.DTOs.Outbound;
+using Application.Interfaces.Repositories.InventoryManagement;
 using Infrastructure.Data;
+using Infrastructure.Models.HomeInv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -28,14 +31,72 @@ namespace Infrastructure.Repositories.InventoryManagement
         {
             try
             {
-                // 1. Change all locations stock for this product being on.
-                // 2. Set the "IsDeleted" to true
-                // 3. Set by default that products that are deleted are not being shown to the user. Set it in the Context file as to what GPT could define.
+                var product = await _context.Products.Include(p => p.ProductLocations)
+                                                     .Include(p => p.Countries)
+                                                     .Include(p => p.Category)
+                                                     .Include(p => p.Tags)
+                                                     .Include(p => p.Suppliers)
+                                                     .FirstOrDefaultAsync(x => x.Id == incomingDTO.ProductId);
 
-                // Comment: This should still be a delete since it does not neccesarily delete the ressource, but make it unaccessible 
-                // for the user to access through normal API calls. Thats why step Number 3. Needs to be implemented so it works as such.
+                if (product == null)
+                    throw new Exception($"No product with id {incomingDTO.ProductId}");
 
-                return null;
+                var productLocations = _context.ProductLocations.Where(x => x.ProductId == incomingDTO.ProductId && x.Quantity > 0);
+
+                productLocations.ForEachAsync(x =>
+                {
+                    x.Quantity = 0;
+                });
+
+                // Set product to isDeleted
+                product.IsDeleted = true;
+
+                _context.SaveChanges();
+
+                DeleteProductOutDTO outDTO = new()
+                {
+                    ProductId = product.Id,
+                    ProductName = product.Name,
+                    EanCode = product.Barcode,
+                    Brand = product.Brand,
+                    CreatedAt = product.CreatedAt,
+                    UpdatedAt = DateTime.Now,
+                    Category = new ProductCategoryDTO()
+                    {
+                        CategoryId = product.Category.Id,
+                        CategoryName = product.Category.Name
+                    },
+
+                    Locations = product.ProductLocations?.Select(pl => new ProductLocationDTO()
+                    {
+                        LocationId = pl.LocationId,
+                        LocationName = pl.Location.Name
+                    })
+                    .ToList(),
+
+                    OriginCountries = product.Countries?.Select(oc => new ProductCountryDTO()
+                    {
+                        CountryId = oc.Id,
+                        CountryName = oc.Name
+                    })
+                    .ToList(),
+
+                    Tags = product.Tags?.Select(t => new ProductTagDTO()
+                    {
+                        TagId = t.Id,
+                        TagName = t.Name
+                    })
+                    .ToList(),
+
+                    Suppliers = product.Suppliers?.Select(s => new ProductSupplierDTO()
+                    {
+                        SupplierId = s.Id,
+                        SupplierName = s.Name
+                    })
+                    .ToList()
+                };
+
+                return outDTO;
             }
             catch (Exception ex)
             {
