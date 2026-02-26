@@ -41,9 +41,11 @@ namespace Infrastructure.Repositories.InventoryManagement
                 if (product == null)
                     throw new Exception($"No product with id {incomingDTO.ProductId}");
 
-                var productLocations = _context.ProductLocations.Where(x => x.ProductId == incomingDTO.ProductId && x.Quantity > 0);
+                var productLocations = _context.ProductLocations.Where(x => x.ProductId == incomingDTO.ProductId && x.Quantity > 0)
+                                                                .Include(p => p.Location)
+                                                                .ToList();
 
-                productLocations.ForEachAsync(x =>
+                productLocations.ForEach(x =>
                 {
                     x.Quantity = 0;
                 });
