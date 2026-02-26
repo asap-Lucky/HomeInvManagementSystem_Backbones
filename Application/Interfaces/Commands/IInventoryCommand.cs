@@ -22,6 +22,7 @@ namespace Application.Interfaces.Commands
 
         #region Transactions
         Task<BatchUpdateLocationStockOutDTO> BatchUpdateLocationStockAsync(BatchUpdateLocationStockInDTO batchUpdateLocationStockInDTO);
+        Task<DeleteProductOutDTO> DeleteProductFromInventoryAsync(DeleteProductInDTO dto);
         #endregion
     }
 }

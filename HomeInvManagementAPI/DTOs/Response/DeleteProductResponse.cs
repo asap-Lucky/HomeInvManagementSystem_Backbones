@@ -16,9 +16,9 @@ namespace HomeInvManagementAPI.DTOs.Response
 
         public DateTime UpdatedAt { get; set; }
 
-        public string? Category { get; set; }
-
         public int? ImageId { get; set; }
+
+        public ProductCategoryDTO? Category { get; set; }
 
         public List<ProductLocationDTO>? Locations { get; set; }
 

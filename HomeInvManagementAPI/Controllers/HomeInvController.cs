@@ -234,17 +234,45 @@ namespace HomeInvManagementAPI.Controllers
         }
 
         [HttpDelete("{product}")]
-        public async Task<ActionResult<ProductAggregateDTO>> DeleteProductInInventoryAsync([FromQuery] int id)
+        [ProducesResponseType<UpdateLocationStockResponse>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<DeleteProductResponse>> DeleteProductInInventoryAsync([FromQuery] int id)
         {
             try
             {
+                if (id < 0)
+                    return StatusCode(StatusCodes.Status400BadRequest, "Invalid product id. Make sure the product id is filled out and is valid id bigger than 0");
 
+                DeleteProductInDTO inDTO = new()
+                {
+                    ProductId = id
+                };
 
-                return Ok();
+                var outDTO = await _inventoryCommand.DeleteProductFromInventoryAsync(inDTO);
+
+                DeleteProductResponse response = new()
+                {
+                    ProductId = outDTO.ProductId,
+                    ProductName = outDTO.ProductName,
+                    EanCode = outDTO.EanCode,
+                    Brand = outDTO.Brand,
+                    CreatedAt = outDTO.CreatedAt,
+                    UpdatedAt = outDTO.UpdatedAt,
+                    Category = outDTO.Category,
+                    ImageId = outDTO.ImageId,
+                    Locations = outDTO.Locations,
+                    OriginCountries = outDTO.OriginCountries,
+                    Suppliers = outDTO.Suppliers,
+                    Tags = outDTO.Tags
+                };
+
+                return StatusCode(StatusCodes.Status200OK, response);
             }
             catch (Exception ex)
             {
-                return BadRequest($"Internal server error: {ex.Message}");
+                _logger.LogError(ex, "Erorr occured while trying to delete product");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
 
