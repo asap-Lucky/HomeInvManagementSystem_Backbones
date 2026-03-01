@@ -11,5 +11,7 @@ namespace Application.DTOs
         public int LocationId { get; set; }
 
         public string LocationName { get; set; } = null!;
+
+        public int Stock { get; set; }
     }
 }

@@ -4,13 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Domain.Enums
+namespace Domain.Common.Errors
 {
-    public enum SourceDestination
+    public class LocationErrors
     {
-        OFF,
-        BTG,
-        DB,
-        Auto
+        public const string IdNotExisting = "LOCATION.ID.NOTEXISTING";
     }
 }

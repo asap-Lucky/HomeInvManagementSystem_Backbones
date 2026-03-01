@@ -1,4 +1,5 @@
-﻿using Application.DTOs.Outbound;
+﻿using Application.DTOs;
+using Application.DTOs.Outbound;
 using Domain.Enums;
 using System;
 using System.Collections.Generic;
@@ -10,19 +11,14 @@ namespace Application.Interfaces.Repositories.InventoryManagement
 {
     public interface IProductReadRepository
     {
-        /// <summary>
-        /// Gets a product from the inventory based on location and optional EAN code.
-        /// </summary>
-        /// <param name="location"></param>
-        /// <param name="eanCode"></param>
-        /// <returns></returns>
-        public Task<ProductAggregateDTO> GetProductFromInventoryAsync(ProductLocation location, string? eanCode = null);
+        // TODO: Move this into its own repository.
+        Task<ProductLocationDTO> GetLocationByIdAsync(int id);
 
-        /// <summary>
-        /// Gets a list of products from the inventory based on location.
-        /// </summary>
-        /// <param name="location"></param>
-        /// <returns></returns>
-        public Task<List<ProductAggregateDTO>> GetProductsFromInventoryAsync(ProductLocation location, bool getAllLocations = false);
+
+        Task<GetProductOutDTO?> GetProductByIdAsync(string id);
+
+        Task<GetProductOutDTO?> GetProductByBarcodeAsync(string barcode);
+
+        Task<List<GetProductOutDTO>> GetProductsByLocationIdAsync(string id);
     }
 }

@@ -3,6 +3,7 @@ using Application.DTOs.Outbound;
 using Application.Interfaces.Commands;
 using Application.Interfaces.Queries;
 using Azure;
+using Domain.Common.Rules;
 using Domain.Enums;
 using HomeInvManagementAPI.DTOs.Request;
 using HomeInvManagementAPI.DTOs.Response;
@@ -16,7 +17,8 @@ namespace HomeInvManagementAPI.Controllers
 {
     // NOTE: Make sure these requests can take both an ean and a product id due to the fact that the ean can be null (apple, banana, pear etc.) dont have an ean code.
 
-    [Route("[controller]/v1/products")]
+
+    [Route("[controller]/v1")]
     [ApiController]
     public class HomeInvController : Controller
     {
@@ -32,17 +34,42 @@ namespace HomeInvManagementAPI.Controllers
             _logger = logger;
         }
 
-        [HttpGet("{location}/{eancode}")]
+        [HttpGet("products/{id}")]
         [ProducesResponseType<ProductAggregateDTO>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ProductAggregateDTO>> GetProductByEanAsync([FromRoute] string location, [FromRoute] string eancode, [FromQuery] string source = "auto")
+        public async Task<ActionResult<ProductAggregateDTO>> GetProductById([FromRoute] string id)
         {
             try
             {
-                string trimmedEanCode = eancode.Replace(" ", "").Trim();
+                // Validation of id.
+                var validId = new ProductId(id);
+
+                string productId = validId.Value;
+
+                ProductAggregateDTO productResponse = await _inventoryQuery.GetProductByEanAsync(trimmedEanCode, locationEnum, sourceEnum);
+
+                return StatusCode(StatusCodes.Status200OK, productResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching product by EAN.");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
+            }
+        }
+
+        [HttpGet("products/by-barcode/{barcode}")]
+        [ProducesResponseType<ProductAggregateDTO>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<ProductAggregateDTO>> GetProductByBarcode([FromRoute] string barcode)
+        {
+            try
+            {
+                
 
                 // Check for EanCode lenght (8 - 13 characters)
-                if (trimmedEanCode.Length < 8 || trimmedEanCode.Length > 13)
+                if (trimmedEanCode.Length < 8 || trimmedEanCode.Length > 14)
                     return BadRequest("Barcode does not match the lenght of a EAN barcode. Must be between 8 - 13 characters long");
 
                 if (!trimmedEanCode.All(char.IsDigit))

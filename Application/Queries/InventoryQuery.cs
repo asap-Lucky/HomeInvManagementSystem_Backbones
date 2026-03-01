@@ -2,6 +2,8 @@
 using Domain.Enums;
 using Application.DTOs.Outbound;
 using Application.Interfaces.Repositories.InventoryManagement;
+using Application.DTOs;
+using System.Linq.Expressions;
 
 namespace Application.Queries
 {
@@ -17,28 +19,11 @@ namespace Application.Queries
             _prodReadRepo = prodReadRepo;
         }
 
-        public async Task<ProductAggregateDTO> GetProductByEanAsync(string eanCode, ProductLocation location, SourceDestination source = SourceDestination.Auto)
+        public async Task<GetProductOutDTO> GetProductById(string id)
         {
             try
             {
-                switch (source)
-                {
-                    case SourceDestination.OFF:
-                        var productFromOFF = await _openFoodFactsQuery.GetProductByEanAsync(eanCode);
-                        return productFromOFF;
-
-                    case SourceDestination.BTG:
-                        Exception exception = new Exception("BTG not yet implemented.");
-                        throw exception;
-
-                    case SourceDestination.DB:
-                        Exception exception1 = new Exception("DB not yet implemented.");
-                        throw exception1;
-
-                    default:
-                        var productFromInventory = await _prodReadRepo.GetProductFromInventoryAsync(location, eanCode);
-                        return productFromInventory;
-                }
+                var outDTO = await _prodReadRepo.GetProductByIdAsync(id);
             }
             catch (Exception)
             {   
@@ -54,6 +39,23 @@ namespace Application.Queries
                 return productsInInventory;
             }
             catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task<bool> IsLocationExisting(int locationId)
+        {
+            try
+            {
+                ProductLocationDTO location = await _prodReadRepo.GetLocationByIdAsync(locationId);
+
+                if (location == null || location == new ProductLocationDTO())
+                    return false;
+
+                return true;
+            }
+            catch (Exception ex)
             {
                 throw;
             }
