@@ -20,13 +20,13 @@ namespace Application.Queries
             _openFoodFactsRepository = openFoodFactsRepository;
         }
     
-        public async Task<ProductAggregateDTO>? GetProductByEanAsync(string eanCode)
+        public async Task<OFFOutDTO>? GetProductByEanAsync(string eanCode)
         {
             try
             {
                 OpenFoodFactsResponseApiDto productResponse = await _openFoodFactsRepository.GetByEanAsync(eanCode);
 
-                ProductAggregateDTO mappedProduct = OpenFoodFactsMapper.MapToProductAggregateDTO(productResponse);
+                OFFOutDTO mappedProduct = OpenFoodFactsMapper.MapToProductAggregateDTO(productResponse);
 
                 return mappedProduct;
             }

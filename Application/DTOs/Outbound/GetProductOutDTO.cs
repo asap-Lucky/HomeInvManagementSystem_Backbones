@@ -16,11 +16,13 @@ namespace Application.DTOs.Outbound
 
         public string? Brand { get; set; }
 
-        public DateTime CreatedAt { get; set; }
+        public DateTime? CreatedAt { get; set; }
 
-        public DateTime UpdatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         public int? ImageId { get; set; }
+
+        public bool IsDeleted { get; set; }
 
         public ProductCategoryDTO? Category { get; set; }
 

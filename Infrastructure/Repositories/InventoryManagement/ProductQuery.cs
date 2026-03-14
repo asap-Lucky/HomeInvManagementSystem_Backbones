@@ -1,5 +1,6 @@
 ﻿using Application.DTOs;
 using Application.DTOs.Outbound;
+using Application.Interfaces.Queries;
 using Application.Interfaces.Repositories.InventoryManagement;
 using Domain.Common.Rules;
 using Infrastructure.Data;
@@ -14,73 +15,15 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Repositories.InventoryManagement
 {
-    public class ProductReadRepository : IProductReadRepository
+    public class ProductQuery : IProductQuery
     {
         // Injections
         private readonly HomeinvsystemContext _context;
-        private readonly ILogger<ProductReadRepository> _logger;
-
-        public ProductReadRepository(HomeinvsystemContext context, ILogger<ProductReadRepository> logger)
+        private readonly ILogger<ProductQuery> _logger;
+        public ProductQuery(HomeinvsystemContext context, ILogger<ProductQuery> logger)
         {
             _context = context;
             _logger = logger;
-        }
-
-        public async Task<List<GetProductOutDTO>> GetProductsAsync()
-        {
-            try
-            {
-                var products = await _context.Products.Include(p => p.ProductLocations)
-                                                      .Include(p => p.Category)
-                                                      .Include(p => p.Countries)
-                                                      .Include(p => p.Tags)
-                                                      .Include(p => p.Suppliers)
-                                                      .ToListAsync();
-
-                List<GetProductOutDTO> outDTOs = new();
-
-                foreach (var product in products)
-                {
-                    var outDTO = MapModelToDTO(product);
-                    outDTOs.Add(outDTO);
-                }
-
-                return outDTOs;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while trying to retrieve a list of products in inventory.");
-                throw;
-            }
-        }
-
-        public async Task<List<GetProductOutDTO>> GetProductsByLocationIdAsync(string id)
-        {
-            try
-            {
-                var products = await _context.Products.Include(p => p.ProductLocations)
-                                                      .Include(p => p.Category)
-                                                      .Include(p => p.Countries)
-                                                      .Include(p => p.Tags)
-                                                      .Include(p => p.Suppliers)
-                                                      .Where(p => p.ProductLocations.Any(loc => loc.Location.Id.ToString() == id))
-                                                      .ToListAsync();
-
-                List<GetProductOutDTO> outDTOs = new();
-
-                foreach (var product in products)
-                {
-                    var outDTO = MapModelToDTO(product);
-                    outDTOs.Add(outDTO);
-                }
-
-                return outDTOs;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"An error occurred while retrieving products from inventory on location ID: {id}");
-                throw;
-            }
         }
 
         public async Task<GetProductOutDTO?> GetProductByIdAsync(string id)
@@ -88,6 +31,7 @@ namespace Infrastructure.Repositories.InventoryManagement
             try
             {
                 var product = await _context.Products.Include(p => p.ProductLocations)
+                                                     .ThenInclude(pl => pl.Location)
                                                      .Include(p => p.Countries)
                                                      .Include(p => p.Category)
                                                      .Include(p => p.Tags)
@@ -113,6 +57,7 @@ namespace Infrastructure.Repositories.InventoryManagement
             try
             {
                 var product = await _context.Products.Include(p => p.ProductLocations)
+                                                     .ThenInclude(pl => pl.Location)
                                                      .Include(p => p.Countries)
                                                      .Include(p => p.Category)
                                                      .Include(p => p.Tags)
@@ -133,6 +78,56 @@ namespace Infrastructure.Repositories.InventoryManagement
             }
         }
 
+        public async Task<List<GetProductLocationOutDTO>?> GetProductsByLocationIdAsync(string id)
+        {
+            try
+            {
+                var locationExists = await _context.Locations.AnyAsync(l => l.Id.ToString() == id);
+
+                if (!locationExists)
+                    return null;
+
+                List<Product>? products = new();
+
+                // NOTE: This is a special case to get all products regardless of location, as the "All Locations" option has an ID of 20 in the database.
+                if (id == "20")
+                {
+                    products = await _context.Products.Include(p => p.ProductLocations)
+                                                      .ThenInclude(pl => pl.Location)
+                                                      .ToListAsync();
+                }
+                else
+                {
+                    products = await _context.Products.Include(p => p.ProductLocations)
+                                                      .ThenInclude(pl => pl.Location)
+                                                      .Where(p => p.ProductLocations.Any(loc => loc.Location.Id.ToString() == id))
+                                                      .ToListAsync();
+                }
+
+                List<GetProductLocationOutDTO> outDTOs = new();
+
+                foreach (var product in products)
+                {
+                    var outDTO = new GetProductLocationOutDTO
+                    {
+                        ProductId = product.Id.ToString(),
+                        ProductName = product.Name,
+                        Stock = product.ProductLocations.FirstOrDefault(pl => pl.LocationId.ToString() == id)?.Quantity ?? 0
+                    };
+
+                    if (outDTO != null)
+                        outDTOs.Add(outDTO);
+                }
+
+                return outDTOs;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"An error occurred while retrieving products from inventory on location ID: {id}");
+                throw;
+            }
+        }
+
         private GetProductOutDTO? MapModelToDTO(Product product)
         {
             try
@@ -146,32 +141,33 @@ namespace Infrastructure.Repositories.InventoryManagement
                     CreatedAt = product.CreatedAt,
                     UpdatedAt = product.UpdatedAt,
                     ImageId = product.ImageId,
+                    IsDeleted = product.IsDeleted,
 
-                    Category = new()
+                    Category = product.Category == null ? null : new ProductCategoryDTO
                     {
                         CategoryId = product.Category.Id,
                         CategoryName = product.Category.Name
                     },
 
-                    CountriesOfOrigin = product.Countries?.Select(c => new ProductCountryDTO
+                    CountriesOfOrigin = product.Countries == null ? null : product.Countries.Select(c => new ProductCountryDTO
                     {
                         CountryId = c.Id,
                         CountryName = c.Name
                     }).ToList(),
 
-                    Suppliers = product.Suppliers?.Select(s => new ProductSupplierDTO()
+                    Suppliers = product.Suppliers == null ? null : product.Suppliers.Select(s => new ProductSupplierDTO()
                     {
                         SupplierId = s.Id,
                         SupplierName = s.Name
                     }).ToList(),
 
-                    Tags = product.Tags?.Select(t => new ProductTagDTO()
+                    Tags = product.Tags == null ? null : product.Tags.Select(t => new ProductTagDTO()
                     {
                         TagId = t.Id,
                         TagName = t.Name
                     }).ToList(),
 
-                    Locations = product.ProductLocations?.Select(pl => new ProductLocationDTO
+                    Locations = product.ProductLocations == null ? null : product.ProductLocations.Select(pl => new ProductLocationDTO
                     {
                         LocationId = pl.LocationId,
                         LocationName = pl.Location.Name,
@@ -185,28 +181,6 @@ namespace Infrastructure.Repositories.InventoryManagement
             {
                 _logger.LogError(ex, "Error while trying to map product model to outgoing DTO.");
                 return null;
-            }
-        }
-
-        public async Task<ProductLocationDTO> GetLocationByIdAsync(int id)
-        {
-            try
-            {
-                var location = await _context.Locations.FirstOrDefaultAsync(loc => loc.Id == id);
-
-                if (location == null)
-                    return new ProductLocationDTO();
-           
-                return new ProductLocationDTO()
-                {
-                    LocationId = location.Id,
-                    LocationName = location.Name
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while trying to fetch the location by location ID.");
-                throw;
             }
         }
     }

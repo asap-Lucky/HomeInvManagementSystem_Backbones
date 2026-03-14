@@ -11,10 +11,6 @@ namespace Application.Interfaces.Repositories.InventoryManagement
 {
     public interface IProductReadRepository
     {
-        // TODO: Move this into its own repository.
-        Task<ProductLocationDTO> GetLocationByIdAsync(int id);
-
-
         Task<GetProductOutDTO?> GetProductByIdAsync(string id);
 
         Task<GetProductOutDTO?> GetProductByBarcodeAsync(string barcode);

@@ -1,8 +1,10 @@
-﻿using Application.DTOs.Inbound;
+﻿using Application.DTOs;
+using Application.DTOs.Inbound;
 using Application.DTOs.Outbound;
 using Application.Interfaces.Commands;
 using Application.Interfaces.Queries;
 using Azure;
+using Domain.Common.Exceptions;
 using Domain.Common.Rules;
 using Domain.Enums;
 using HomeInvManagementAPI.DTOs.Request;
@@ -16,29 +18,30 @@ using System.Reflection.Metadata.Ecma335;
 namespace HomeInvManagementAPI.Controllers
 {
     // NOTE: Make sure these requests can take both an ean and a product id due to the fact that the ean can be null (apple, banana, pear etc.) dont have an ean code.
-
-
     [Route("[controller]/v1")]
     [ApiController]
     public class HomeInvController : Controller
     {
         // Injections
         private readonly IInventoryCommand _inventoryCommand;
-        private readonly IInventoryQuery _inventoryQuery;
+        private readonly ILocationQuery _locationQuery;
+        private readonly IProductQuery _inventoryQuery;
         private readonly ILogger<HomeInvController> _logger;
 
-        public HomeInvController(IInventoryQuery inventoryQuery, IInventoryCommand inventoryCommand, ILogger<HomeInvController> logger)
+        public HomeInvController(IProductQuery inventoryQuery, IInventoryCommand inventoryCommand, ILocationQuery locationQuery, ILogger<HomeInvController> logger)
         {
             _inventoryCommand = inventoryCommand;
             _inventoryQuery = inventoryQuery;
+            _locationQuery = locationQuery;
             _logger = logger;
         }
 
         [HttpGet("products/{id}")]
-        [ProducesResponseType<ProductAggregateDTO>(StatusCodes.Status200OK)]
+        [ProducesResponseType<GetProductOutDTO>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ProductAggregateDTO>> GetProductById([FromRoute] string id)
+        public async Task<ActionResult<GetProductOutDTO>> GetProductById([FromRoute] string id)
         {
             try
             {
@@ -47,74 +50,155 @@ namespace HomeInvManagementAPI.Controllers
 
                 string productId = validId.Value;
 
-                ProductAggregateDTO productResponse = await _inventoryQuery.GetProductByEanAsync(trimmedEanCode, locationEnum, sourceEnum);
+                GetProductOutDTO? outDTO = await _inventoryQuery.GetProductByIdAsync(productId);
 
-                return StatusCode(StatusCodes.Status200OK, productResponse);
+                if (outDTO == null)
+                    return StatusCode(StatusCodes.Status404NotFound); 
+
+                GetProductResponse response = new()
+                {
+                    ProductId = outDTO.ProductId,
+                    ProductName = outDTO.ProductName,
+                    Barcode = outDTO.Barcode,
+                    Brand = outDTO.Brand,
+                    CreatedAt = outDTO.CreatedAt,
+                    UpdatedAt = outDTO.UpdatedAt,
+                    Category = outDTO.Category,
+                    ImageId = outDTO.ImageId,
+                    Locations = outDTO.Locations,
+                    CountriesOfOrigin = outDTO.CountriesOfOrigin,
+                    Suppliers = outDTO.Suppliers,
+                    Tags = outDTO.Tags
+                };
+
+                return StatusCode(StatusCodes.Status200OK, response);
+            }
+            catch (DomainRuleViolationException ex)
+            {
+                _logger.LogError(ex, "Domain rule violation occurred while fetching products from inventory.");
+                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while fetching product by EAN.");
+                _logger.LogError(ex, $"Error occurred while fetching product by ID. Id Value: {id}");
                 return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
 
         [HttpGet("products/by-barcode/{barcode}")]
-        [ProducesResponseType<ProductAggregateDTO>(StatusCodes.Status200OK)]
+        [ProducesResponseType<GetProductOutDTO>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<ProductAggregateDTO>> GetProductByBarcode([FromRoute] string barcode)
+        public async Task<ActionResult<GetProductOutDTO>> GetProductByBarcode([FromRoute] string barcode)
         {
             try
             {
-                
+                // Validate barcode.
+                var validBarcode = new ProductBarcode(barcode);
 
-                // Check for EanCode lenght (8 - 13 characters)
-                if (trimmedEanCode.Length < 8 || trimmedEanCode.Length > 14)
-                    return BadRequest("Barcode does not match the lenght of a EAN barcode. Must be between 8 - 13 characters long");
+                string barcodeValue = validBarcode.Value;
 
-                if (!trimmedEanCode.All(char.IsDigit))
-                    return BadRequest("Invalid EAN code format. EAN code must contain only numeric characters.");
+                GetProductOutDTO? outDTO = await _inventoryQuery.GetProductByBarcodeAsync(barcodeValue);
 
-                // Check for valid route parameters (location and source)
-                if (!Enum.TryParse<Domain.Enums.ProductLocation>(location, true, out Domain.Enums.ProductLocation locationEnum))
-                    return BadRequest("Invalid location. Please define a valid location");
+                if (outDTO == null)
+                    return StatusCode(StatusCodes.Status404NotFound);
 
-                if (!Enum.TryParse<SourceDestination>(source, true, out SourceDestination sourceEnum))
-                    return BadRequest("Invalid source. Please define a valid source");
+                GetProductResponse response = new()
+                {
+                    ProductId = outDTO.ProductId,
+                    ProductName = outDTO.ProductName,
+                    Barcode = outDTO.Barcode,
+                    Brand = outDTO.Brand,
+                    CreatedAt = outDTO.CreatedAt,
+                    UpdatedAt = outDTO.UpdatedAt,
+                    Category = outDTO.Category,
+                    ImageId = outDTO.ImageId,
+                    Locations = outDTO.Locations,
+                    CountriesOfOrigin = outDTO.CountriesOfOrigin,
+                    Suppliers = outDTO.Suppliers,
+                    Tags = outDTO.Tags
+                };
 
-                ProductAggregateDTO productResponse = await _inventoryQuery.GetProductByEanAsync(trimmedEanCode, locationEnum, sourceEnum);
-
-                return StatusCode(StatusCodes.Status200OK, productResponse);
+                return StatusCode(StatusCodes.Status200OK, response);
+            }
+            catch (DomainRuleViolationException ex)
+            {
+                _logger.LogError(ex, "Domain rule violation occurred while fetching products from inventory.");
+                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while fetching product by EAN.");
+                _logger.LogError(ex, $"Error occurred while fetching product by barcode. Barcode value {barcode}");
                 return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
 
-        [HttpGet("{location}")]
-        [ProducesResponseType<ProductAggregateDTO>(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest),]
+        [HttpGet("locations/{locationId}/products")]
+        [ProducesResponseType<List<GetProductOutDTO>>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<List<ProductAggregateDTO>>> GetProductsOnLocationAsync([FromRoute] string location = " ", [FromQuery] bool allLocations = false)
+        public async Task<ActionResult<List<GetProductOutDTO>>> GetProductsOnLocation([FromRoute] string locationId)
         {
             try
             {
-                if (allLocations)
-                    location = Domain.Enums.ProductLocation.Unassigned.ToString();
+                // Validate locationId.
+                var validLocationId = new LocationId(locationId);
 
-                // Check for valid route parameters (location and source)
-                if (!Enum.TryParse<Domain.Enums.ProductLocation>(location.Trim().Replace(" ", ""), true, out Domain.Enums.ProductLocation locationEnum))
-                    return StatusCode(StatusCodes.Status400BadRequest, "Invalid location. Please define a valid location");
+                string locationIdValue = validLocationId.Value;
 
-                List<ProductAggregateDTO> productListResponse = await _inventoryQuery.GetProductsFromInventoryAsync(locationEnum, allLocations);
+                List<GetProductLocationOutDTO>? outDTOs = await _inventoryQuery.GetProductsByLocationIdAsync(locationIdValue);
 
-                return StatusCode(StatusCodes.Status200OK, productListResponse);
+                if (outDTOs == null)
+                    return StatusCode(StatusCodes.Status404NotFound);
+
+                List<GetProductLocationResponse> response = outDTOs.Select(outDTO => new GetProductLocationResponse
+                {
+                    ProductId = outDTO.ProductId,
+                    ProductName = outDTO.ProductName,
+                    Stock = outDTO.Stock
+                }).ToList();
+
+                return StatusCode(StatusCodes.Status200OK, response);
+            }
+            catch (DomainRuleViolationException ex)
+            {
+                _logger.LogError(ex, "Domain rule violation occurred while fetching products from inventory.");
+                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching products from inventory.");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
+            }
+        }
+
+        [HttpGet("locations")]
+        [ProducesResponseType<List<GetProductOutDTO>>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<List<GetProductOutDTO>>> GetLocations()
+        {
+            try
+            {
+                List<LocationDTO>? outDTOs = await _locationQuery.GetAllLocationsAsync();
+
+                if (outDTOs == null)
+                    return StatusCode(StatusCodes.Status404NotFound);
+                
+                List<GetLocationResponse> response = outDTOs.Select(outDTO => new GetLocationResponse
+                {
+                    Id = outDTO.Id,
+                    Name = outDTO.Name
+                }).ToList();
+
+                return StatusCode(StatusCodes.Status200OK, response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching locations from inventory.");
                 return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
         }
@@ -136,7 +220,7 @@ namespace HomeInvManagementAPI.Controllers
                     ProductName = request.ProductName,
                     CategoryId = (int)request.Category,
                     Locations = request.Locations
-                                              .Select(location => (int)location)
+                                              .Select(location => location)
                                               .ToList(),
                     EANCode = request.EANCode,
                     Brand = request.Brand,
@@ -232,13 +316,13 @@ namespace HomeInvManagementAPI.Controllers
                 if (productId < 0)
                     return StatusCode(StatusCodes.Status400BadRequest, "Invalid product id. Make sure the product id is filled out and is valid id bigger than 0");
 
-                if (!Enum.TryParse<Domain.Enums.ProductLocation>(location, true, out Domain.Enums.ProductLocation locationEnum))
-                    return StatusCode(StatusCodes.Status400BadRequest, "Invalid location. Please define a valid location");
+                //if (!Enum.TryParse<Domain.Enums.ProductLocation>(location, true, out Domain.Enums.ProductLocation locationEnum))
+                //    return StatusCode(StatusCodes.Status400BadRequest, "Invalid location. Please define a valid location");
 
                 UpdateLocationStockInDTO inDTO = new()
                 {
                     ProductId = productId,
-                    LocationId = (int)locationEnum,
+                    //LocationId = (int)locationEnum,
                     Delta = request.Delta
                 };
 
@@ -328,12 +412,12 @@ namespace HomeInvManagementAPI.Controllers
         {
             try
             {
-                if (!Enum.TryParse<Domain.Enums.ProductLocation>(location, true, out Domain.Enums.ProductLocation locationEnum))
-                    return BadRequest("Invalid location. Please define a valid location");
+                //if (!Enum.TryParse<Domain.Enums.ProductLocation>(location, true, out Domain.Enums.ProductLocation locationEnum))
+                //    return BadRequest("Invalid location. Please define a valid location");
 
                 BatchUpdateLocationStockInDTO inDTO = new()
                 {
-                    LocationId = (int)locationEnum,
+                    //LocationId = (int)locationEnum,
                     StockDeltas = batchUpdateRequest.Select(item => new StockDeltaItemInDTO
                     {
                         ProductId = item.ProductId,

@@ -7,7 +7,8 @@ using System.Threading.Tasks;
 namespace Domain.Common.Errors
 {
     public class LocationErrors
-    {
+    {   
         public const string IdNotExisting = "LOCATION.ID.NOTEXISTING";
+        public const string LocationIdFormat = "LOCATION.ID.FORMAT";
     }
 }

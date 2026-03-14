@@ -5,6 +5,7 @@ using Application.Interfaces.Repositories;
 using Application.Queries;
 using HomeInvManagementAPI.DI;
 using Infrastructure.Data;
+using Infrastructure.Repositories.InventoryManagement;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +19,7 @@ builder.Services.AddTransient<IInventoryCommand, InventoryCommand>();
 builder.Services.AddTransient<IImageCommand, ImageCommand>();
 
 // Queries
-builder.Services.AddTransient<IInventoryQuery, InventoryQuery>();
+builder.Services.AddTransient<IProductQuery, ProductQuery>();
 builder.Services.AddTransient<IImageQuery, ImageQuery>();
 builder.Services.AddTransient<IOpenFoodFactsQuery, OpenFoodFactsQuery>();
 

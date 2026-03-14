@@ -1,5 +1,6 @@
 ﻿using Application.Commands;
 using Application.Interfaces.Commands;
+using Application.Interfaces.Queries;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Repositories.ImageHandler;
 using Application.Interfaces.Repositories.InventoryManagement;
@@ -31,11 +32,16 @@ namespace HomeInvManagementAPI.DI
                 var options = sp.GetRequiredService<HomeInvOptions>();
             });
 
+            // Product
             services.AddTransient<IProductCreateRepository, ProductCreateRepository>();
-            services.AddTransient<IProductReadRepository, ProductReadRepository>();
+            services.AddTransient<IProductQuery, ProductQuery>();
             services.AddTransient<IProductUpdateRepository, ProductUpdateRepository>();
             services.AddTransient<IProductDeleteRepository, ProductDeleteRepository>();
-            
+
+            // Location
+            services.AddTransient<ILocationQuery, LocationQuery>(); 
+
+            // Images
             services.AddTransient<IImageUploadRepository, ImageUploadRepository>();
             services.AddTransient<IImageDownloadRepository, ImageDownloadRepository>();
             services.AddTransient<IImageDeleteRepository, ImageDeleteRepository>();

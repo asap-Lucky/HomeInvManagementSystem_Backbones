@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Outbound;
+﻿using Application.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace Application.Interfaces.Queries
 {
-    public interface IOpenFoodFactsQuery
+    public interface ILocationQuery
     {
-        public Task<OFFOutDTO>? GetProductByEanAsync(string eanCode);
+        Task<List<LocationDTO>> GetAllLocationsAsync();
     }
 }

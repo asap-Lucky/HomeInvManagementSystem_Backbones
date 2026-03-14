@@ -1,5 +1,6 @@
 ﻿
 using Domain.Enums;
+using Infrastructure.Models.HomeInv;
 using System.ComponentModel.DataAnnotations;
 
 namespace HomeInvManagementAPI.DTOs.Request
@@ -9,7 +10,7 @@ namespace HomeInvManagementAPI.DTOs.Request
         [Required]
         public required string ProductName { get; set; }
         public ProductCategory Category { get; set; }
-        public List<ProductLocation> Locations { get; set; } = null!;
+        public List<int> Locations { get; set; } = null!;
         public string? EANCode { get; set; }
         public string? Brand { get; set; }
         public DateTime? ExpirationDate { get; set; }
