@@ -13,19 +13,20 @@ namespace Application.DTOs.Outbound
 
         public string ProductName { get; set; } = null!;
 
-        public int? ImageId { get; set; }
-
-        public string? EanCode { get; set; }
+        public string? Barcode { get; set; }
 
         public string? Brand { get; set; }
 
+        public DateTime CreatedAt { get; set; }
+
         public DateTime UpdatedAt { get; set; }
+
+        public int? ImageId { get; set; }
 
         public ProductCategoryDTO Category { get; set; } = null!;
 
         public List<ProductLocationDTO>? Locations { get; set; }
 
-        // NOTE: One product can be produced in multiple countries. Example: Nuts collected in Bolivia, packaged for Lidl in Germany.
         public List<ProductCountryDTO>? OriginCountries { get; set; }
 
         public List<ProductSupplierDTO>? Suppliers { get; set; }

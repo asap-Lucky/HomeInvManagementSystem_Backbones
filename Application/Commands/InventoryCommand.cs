@@ -21,7 +21,7 @@ namespace Application.Commands
             _deleteProductRepo = productDeleteRepo;
         }
 
-        public async Task<CreateProductOutDTO> CreateProduct(CreateProductInDTO createProdInDTO)
+        public async Task<CreateProductOutDTO?> CreateProduct(CreateProductInDTO createProdInDTO)
         {
             try
             {
@@ -34,11 +34,11 @@ namespace Application.Commands
             }
         }
 
-        public async Task<UpdateProductDetailsOutDTO> UpdateProductDetailsAsync(UpdateProductDetailsInDTO updateProdInDTO)
+        public async Task<UpdateProductDetailsOutDTO?> UpdateProductDetailsAsync(string productId, UpdateProductDetailsInDTO updateProdInDTO)
         {
             try
             {
-                var updateProduct = await _updateProductRepo.UpdateProductDetailsDBAsync(updateProdInDTO);
+                var updateProduct = await _updateProductRepo.UpdateProductDetailsDBAsync(productId, updateProdInDTO);
                 return updateProduct;
             }
             catch
@@ -47,7 +47,7 @@ namespace Application.Commands
             }
         }
 
-        public async Task<UpdateLocationStockOutDTO> UpdateLocationStockAsync(UpdateLocationStockInDTO updateLocationStockInDTO)
+        public async Task<UpdateLocationStockOutDTO?> UpdateLocationStockAsync(UpdateLocationStockInDTO updateLocationStockInDTO)
         {
             try
             {

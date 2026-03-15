@@ -10,12 +10,11 @@ namespace Application.Interfaces.Commands
 {
     public interface IInventoryCommand
     {
-        Task<CreateProductOutDTO> CreateProduct(CreateProductInDTO createProdInDTO);
+        Task<CreateProductOutDTO?> CreateProduct(CreateProductInDTO createProdInDTO);
 
-        Task<UpdateProductDetailsOutDTO> UpdateProductDetailsAsync(UpdateProductDetailsInDTO updateProdInDTO);
+        Task<UpdateProductDetailsOutDTO?> UpdateProductDetailsAsync(string productId, UpdateProductDetailsInDTO updateProdInDTO);
 
-        Task<UpdateLocationStockOutDTO> UpdateLocationStockAsync(UpdateLocationStockInDTO updateLocationStockInDTO);
-
+        Task<UpdateLocationStockOutDTO?> UpdateLocationStockAsync(UpdateLocationStockInDTO updateLocationStockInDTO);
         #region Mocks
         Task AddMockProductsAsync(int mockAmmount);
         #endregion

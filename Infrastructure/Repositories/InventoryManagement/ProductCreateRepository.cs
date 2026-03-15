@@ -29,7 +29,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                 _logger.LogInformation($"[CREATE]: Adding new product to inventory.");
 
                 // Instance of product
-                Product prod = new()
+                Product prod = new()    
                 {
                     Name = inDTO.ProductName,
                     Barcode = inDTO.Barcode,
@@ -61,8 +61,8 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                     if (suppliers.Count() != inDTO.Suppliers.Count())
                     {
-                        var foundIds = suppliers.Select(t => t.Id);
-                        var missingIds = inDTO.Suppliers.Where(id => !foundIds.Contains(id));
+                        var foundIds = suppliers.Select(t => t.Id).ToList();
+                        var missingIds = inDTO.Suppliers.Where(id => !foundIds.Contains(id)).ToList();
 
                         _logger.LogWarning($"[CREATE]: Some suppliers were not found for the new product. Missing Tag IDs: {string.Join(", ", foundIds)}");
                     }
@@ -78,8 +78,8 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                     if (tags.Count() != inDTO.Tags.Count())
                     {
-                        var foundIds = tags.Select(t => t.Id);
-                        var missingIds = inDTO.Tags.Where(id => !foundIds.Contains(id));
+                        List<int> foundIds = tags.Select(t => t.Id).ToList();
+                        var missingIds = inDTO.Tags.Where(id => !foundIds.Contains(id)).ToList();
 
                         _logger.LogWarning($"[CREATE]: Some tags were not found for the new product. Missing Tag IDs: {string.Join(", ", foundIds)}");
                     }
@@ -95,8 +95,8 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                     if (countries.Count() != inDTO.OriginCountries.Count())
                     {
-                        var foundIds = countries.Select(t => t.Id);
-                        var missingIds = inDTO.OriginCountries.Where(id => !foundIds.Contains(id));
+                        var foundIds = countries.Select(t => t.Id).ToList();
+                        var missingIds = inDTO.OriginCountries.Where(id => !foundIds.Contains(id)).ToList();
 
                         _logger.LogWarning($"[CREATE]: Some countries were not found for the new product. Missing Tag IDs: {string.Join(", ", foundIds)}");
                     }

@@ -6,7 +6,7 @@ namespace HomeInvManagementAPI.DTOs.Request
     {
         public string ProductName { get; set; } = null!;
 
-        public string? EanCode { get; set; }
+        public string? Barcode { get; set; }
 
         public string? Brand { get; set; }
 

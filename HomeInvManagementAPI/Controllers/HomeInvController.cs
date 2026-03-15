@@ -206,11 +206,11 @@ namespace HomeInvManagementAPI.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("products")]
         [ProducesResponseType<CreateProductResponse>(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<CreateProductResponse>> CreateProductInInventoryAsync([FromBody] CreateProductRequest request)
+        public async Task<ActionResult<CreateProductResponse>> AddProductToInventory([FromBody] CreateProductRequest request)
         {
             try
             {
@@ -223,7 +223,7 @@ namespace HomeInvManagementAPI.Controllers
                     ProductName = productName.Value,
                     CategoryId = request.CategoryId,
                     Locations = request.Locations,
-                    Barcode = barcode.Value,
+                    Barcode = barcode?.Value,
                     Brand = request.Brand,
                     OriginCountries = request.OriginCountries,
                     Suppliers = request.Suppliers,
@@ -263,22 +263,24 @@ namespace HomeInvManagementAPI.Controllers
             }
         }
 
-        [HttpPut("{productId}")]
+        [HttpPut("products/{id}")]
         [ProducesResponseType<UpdateProductDetailsResponse>(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<UpdateProductDetailsResponse>> UpdateProductInfoAsync([FromRoute] int productId, [FromBody] UpdateProductDetailsRequest request)
+        public async Task<ActionResult<UpdateProductDetailsResponse>> UpdateProductInfoAsync([FromRoute] int id, [FromBody] UpdateProductDetailsRequest request)
         {
             try
             {
-                if (productId < 0)
-                    return StatusCode(StatusCodes.Status400BadRequest, "Invalid product id. Make sure the product id is filled out and is valid id bigger than 0");
+                // Validation of request parameters.
+                ProductName productName = new(request.ProductName);
+                ProductBarcode? barcode = request.Barcode != null ? new ProductBarcode(request.Barcode) : null;
+                ProductId productId = new(id.ToString());
 
                 UpdateProductDetailsInDTO inDTO = new()
                 {
-                    ProductId = productId,
-                    ProductName = request.ProductName,
-                    EanCode = request.EanCode,
+                    ProductName = productName.Value,
+                    Barcode = barcode?.Value,
                     Brand = request.Brand,
                     CategoryId = request.CategoryId,
                     ImageId = request.ImageId,
@@ -286,14 +288,17 @@ namespace HomeInvManagementAPI.Controllers
                     Suppliers = request.Suppliers,
                     Tags = request.Tags
                 };
+                
+                var outDTO = await _inventoryCommand.UpdateProductDetailsAsync(productId.Value, inDTO);
 
-                var outDTO = await _inventoryCommand.UpdateProductDetailsAsync(inDTO);
+                if (outDTO == null)
+                    return StatusCode(StatusCodes.Status404NotFound, "Product not found.");
 
                 UpdateProductDetailsResponse response = new()
                 {
                     ProductId = outDTO.ProductId,
                     ProductName = outDTO.ProductName,
-                    EanCode = outDTO.EanCode,
+                    Barcode = outDTO.Barcode,
                     Brand = outDTO.Brand,
                     UpdatedAt = outDTO.UpdatedAt,
                     Category = outDTO.Category,
@@ -304,6 +309,11 @@ namespace HomeInvManagementAPI.Controllers
                 };
 
                 return StatusCode(StatusCodes.Status200OK, response);
+            }
+            catch (DomainRuleViolationException ex)
+            {
+                _logger.LogError(ex, "Domain rule violation occurred while fetching products from inventory.");
+                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
             }
             catch (Exception ex)
             {

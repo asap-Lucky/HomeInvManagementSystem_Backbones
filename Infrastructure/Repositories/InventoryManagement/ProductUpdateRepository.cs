@@ -3,6 +3,7 @@ using Application.DTOs.Inbound;
 using Application.DTOs.Outbound;
 using Application.Interfaces.Repositories.InventoryManagement;
 using Infrastructure.Data;
+using Infrastructure.Models.HomeInv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Logging;
@@ -22,97 +23,140 @@ namespace Infrastructure.Repositories.InventoryManagement
             _logger = logger;
         }
 
-        public async Task<UpdateProductDetailsOutDTO> UpdateProductDetailsDBAsync(UpdateProductDetailsInDTO incomingDTO)
+        public async Task<UpdateProductDetailsOutDTO?> UpdateProductDetailsDBAsync(string productId, UpdateProductDetailsInDTO inDTO)
         {
             try
             {
-                var productDB = await _context.Products
+                var product = await _context.Products
                     .Include(p => p.Suppliers)
                     .Include(p => p.Category)
                     .Include(p => p.Image)
                     .Include(p => p.Tags)
                     .Include(p => p.Countries)
-                    .FirstOrDefaultAsync(p => p.Id == incomingDTO.ProductId);
+                    .FirstOrDefaultAsync(p => p.Id.ToString() == productId);
 
-                if (productDB == null)
-                    throw new Exception("Could not update product due to id not existing in system.");
+                if (product == null)
+                    return null;
 
-                // Update fields in DB entity.
-                productDB.Name = incomingDTO.ProductName;
-                productDB.Barcode = incomingDTO.EanCode;
-                productDB.Brand = incomingDTO.Brand;
-                productDB.UpdatedAt = DateTime.Now;
-                productDB.Image = _context.Images?.FirstOrDefault(i => i.Id == incomingDTO.ImageId);
-                productDB.ImageId = incomingDTO.ImageId;
-                productDB.Category = _context.Categories.First(c => c.Id == incomingDTO.CategoryId)!;
+                product.Name = inDTO.ProductName;
+                product.Barcode = inDTO.Barcode;
+                product.Brand = inDTO.Brand;
+                product.UpdatedAt = DateTime.Now;
+                product.ImageId = inDTO.ImageId;
+                product.CategoryId = inDTO.CategoryId;
 
-                // Clear existing complex relations.
-                productDB.Suppliers.Clear();
-                productDB.Tags.Clear();
-                productDB.Countries.Clear();
+                product = await UpdateComplexRelationships(product, inDTO);
 
                 await _context.SaveChangesAsync();
 
-                // Set complex relations.
-                productDB.Suppliers = incomingDTO.Suppliers != null ? incomingDTO?.Suppliers?.Select(s => _context.Suppliers.FirstOrDefault(sup => sup.Id == s)).ToList() : new List<Models.HomeInv.Supplier>();
-                productDB.Tags = incomingDTO.Tags != null ? incomingDTO.Tags?.Select(t => _context.Tags.FirstOrDefault(tag => tag.Id == t)).ToList() : new List<Models.HomeInv.Tag>();
-                productDB.Countries = incomingDTO.OriginCountries != null ? incomingDTO.OriginCountries.Select(c => _context.Countries.FirstOrDefault(country => country.Id == c)).ToList() : new List<Models.HomeInv.Country>();
+                var outDTO = MapOutDTO(product);
 
-                await _context.SaveChangesAsync();
-
-                var outgoingDTO = MapDBModelToOutgoingDTO(productDB);
-
-                UpdateProductDetailsOutDTO MapDBModelToOutgoingDTO(Models.HomeInv.Product productDB)
-                {
-                    try
-                    {
-                        UpdateProductDetailsOutDTO outgoingDTO = new UpdateProductDetailsOutDTO();
-
-                        outgoingDTO.ProductId = productDB.Id;
-                        outgoingDTO.ProductName = productDB.Name;
-                        outgoingDTO.EanCode = productDB.Barcode;
-                        outgoingDTO.Brand = productDB.Brand;
-                        outgoingDTO.UpdatedAt = productDB.UpdatedAt;
-                        outgoingDTO.ImageId = productDB.ImageId;
-
-                        outgoingDTO.Category = new ProductCategoryDTO
-                        {
-                            CategoryId = productDB.Category.Id,
-                            CategoryName = productDB.Category.Name
-                        };
-
-                        outgoingDTO.OriginCountries = productDB.Countries != null ? productDB.Countries.Select(c => new ProductCountryDTO
-                        {
-                            CountryId = c.Id,
-                            CountryName = c.Name
-                        }).ToList() : new List<ProductCountryDTO>();
-
-                        outgoingDTO.Suppliers = productDB.Suppliers != null ? productDB.Suppliers.Select(s => new ProductSupplierDTO
-                        {
-                            SupplierId = s.Id,
-                            SupplierName = s.Name
-                        }).ToList() : new List<ProductSupplierDTO>();
-
-                        outgoingDTO.Tags = productDB.Tags != null ? productDB.Tags.Select(t => new ProductTagDTO
-                        {
-                            TagId = t.Id,
-                            TagName = t.Name
-                        }).ToList() : new List<ProductTagDTO>();
-
-                        return outgoingDTO;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "An error occurred while mapping the product database model to the outgoing DTO.");
-                        throw;
-                    }
-                }
-
-                return outgoingDTO;
+                return outDTO;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while updating product details in the database.");
+                throw;
+            }
+        }
+
+        private async Task<Product> UpdateComplexRelationships(Product product, UpdateProductDetailsInDTO inDTO)
+        {
+            try
+            {
+                // Update suppliers //
+                var existingSupplierIds = product.Suppliers.Select(s => s.Id).ToHashSet();
+                var incomingSupplierIds = inDTO?.Suppliers?.ToHashSet();
+
+                // Remove missing suppliers
+                product.Tags.ToList().RemoveAll(t => !incomingSupplierIds.Contains(t.Id));
+
+                // Add new suppliers
+                var suppliersToAdd = await _context.Suppliers.Where(t => incomingSupplierIds
+                                                        .Except(existingSupplierIds).Contains(t.Id))
+                                                        .ToListAsync();
+                
+                foreach (var supplier in suppliersToAdd)
+                    product.Suppliers.Add(supplier);
+
+                // Update tags //
+                var existingTagIds = product.Tags.Select(t => t.Id).ToHashSet();
+                var incomingTagIds = inDTO?.Tags?.ToHashSet();
+
+                // Remove missing tags
+                product.Tags.ToList().RemoveAll(t => !incomingTagIds.Contains(t.Id));
+                // Add new tags
+                var tagsToAdd = await _context.Tags.Where(t => incomingTagIds
+                                                        .Except(existingTagIds).Contains(t.Id))
+                                                        .ToListAsync();
+
+                foreach (var tag in tagsToAdd)
+                    product.Tags.Add(tag);
+
+                // Update countries //
+                var existingCountryIds = product.Countries.Select(c => c.Id).ToHashSet();
+                var incomingCountryIds = inDTO?.OriginCountries?.ToHashSet();
+
+                // Remove missing countries
+                product.Countries.ToList().RemoveAll(c => !incomingCountryIds.Contains(c.Id));
+                
+                // Add new countries
+                var countriesToAdd = await _context.Countries.Where(c => incomingCountryIds
+                                                        .Except(existingCountryIds).Contains(c.Id))
+                                                        .ToListAsync();
+
+                foreach (var country in countriesToAdd)
+                    product.Countries.Add(country);
+
+                return product;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while updating complex product relationships in the database.");
+                throw;
+            }
+        }
+
+        private UpdateProductDetailsOutDTO MapOutDTO(Product product)
+        {
+            try
+            {
+                UpdateProductDetailsOutDTO outDTO = new()
+                {
+                    ProductId = product.Id,
+                    ProductName = product.Name,
+                    Barcode = product.Barcode,
+                    Brand = product.Brand,
+                    CreatedAt = product.CreatedAt,
+                    UpdatedAt = product.UpdatedAt,
+                    ImageId = product.ImageId,
+                    Category = product.Category != null ? new ProductCategoryDTO
+                    {
+                        CategoryId = product.Category.Id,
+                        CategoryName = product.Category.Name
+                    } : null,
+                    OriginCountries = product.Countries != null ? product.Countries.Select(c => new ProductCountryDTO
+                    {
+                        CountryId = c.Id,
+                        CountryName = c.Name
+                    }).ToList() : null,
+                    Suppliers = product.Suppliers != null ? product.Suppliers.Select(s => new ProductSupplierDTO
+                    {
+                        SupplierId = s.Id,
+                        SupplierName = s.Name
+                    }).ToList() : null,
+                    Tags = product.Tags != null ? product.Tags.Select(t => new ProductTagDTO
+                    {
+                        TagId = t.Id,
+                        TagName = t.Name
+                    }).ToList() : null
+                };
+
+                return outDTO;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while mapping the product database model to the outgoing DTO.");
                 throw;
             }
         }

@@ -1,5 +1,4 @@
-﻿using Domain.Enums;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -10,11 +9,9 @@ namespace Application.DTOs.Inbound
 {
     public class UpdateProductDetailsInDTO
     {
-        public int ProductId { get; set; }
+        public string ProductName { get; set; } = null!;
 
-        public  string ProductName { get; set; } = null!;
-
-        public string? EanCode { get; set; }    
+        public string? Barcode { get; set; }    
 
         public string? Brand { get; set; }
 
