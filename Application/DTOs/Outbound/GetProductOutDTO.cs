@@ -28,7 +28,7 @@ namespace Application.DTOs.Outbound
 
         public List<ProductLocationDTO>? Locations { get; set; }
 
-        public List<ProductCountryDTO>? CountriesOfOrigin { get; set; }
+        public List<ProductCountryDTO>? OriginCountries { get; set; }
 
         public List<ProductSupplierDTO>? Suppliers { get; set; }
 

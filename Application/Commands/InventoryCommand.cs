@@ -21,11 +21,11 @@ namespace Application.Commands
             _deleteProductRepo = productDeleteRepo;
         }
 
-        public async Task<CreateProductOutDTO> AddProductToInventoryAsync(CreateProductInDTO createProdInDTO)
+        public async Task<CreateProductOutDTO> CreateProduct(CreateProductInDTO createProdInDTO)
         {
             try
             {
-                var createProduct = await _createProductRepo.AddProductToInventoryDBAsync(createProdInDTO);
+                var createProduct = await _createProductRepo.CreateInventoryProductAsync(createProdInDTO);
                 return createProduct;
             }
             catch

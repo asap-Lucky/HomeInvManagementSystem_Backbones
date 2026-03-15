@@ -5,7 +5,6 @@ using Application.Interfaces.Repositories.InventoryManagement;
 using Infrastructure.Data;
 using Infrastructure.Models.HomeInv;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Repositories.InventoryManagement
@@ -14,6 +13,7 @@ namespace Infrastructure.Repositories.InventoryManagement
     {
         // Injections
         private readonly HomeinvsystemContext _context;
+
         private readonly ILogger<ProductCreateRepository> _logger;
 
         public ProductCreateRepository(HomeinvsystemContext context, ILogger<ProductCreateRepository> logger)
@@ -22,97 +22,86 @@ namespace Infrastructure.Repositories.InventoryManagement
             _logger = logger;
         }
 
-        // TODO: Consider making this a transaction to ensure all or nothing is saved.
-        public async Task<CreateProductOutDTO> AddProductToInventoryDBAsync(CreateProductInDTO createInDTO)
+        public async Task<CreateProductOutDTO> CreateInventoryProductAsync(CreateProductInDTO inDTO)
         {
             try
             {
-                // Create Primary values in the table.
-                var product = new Models.HomeInv.Product
+                _logger.LogInformation($"[CREATE]: Adding new product to inventory.");
+
+                // Instance of product
+                Product prod = new()
                 {
-                    Name = createInDTO.ProductName,
-                    CategoryId = createInDTO.CategoryId,
-                    Barcode = createInDTO.EANCode,
-                    Brand = createInDTO.Brand,
-                    ImageId = createInDTO.ImageId,
+                    Name = inDTO.ProductName,
+                    Barcode = inDTO.Barcode,
+                    Brand = inDTO.Brand,
+                    CategoryId = inDTO.CategoryId,
+                    ImageId = inDTO.ImageId,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
                 };
 
-                var entry = _context.Products.Add(product);
-                await _context.SaveChangesAsync();
+                _context.Products.Add(prod);
 
-                // Populate Junction tables
-                if (createInDTO.Locations != null)
-                {
-                    foreach (var locationId in createInDTO.Locations)
+                prod.Category = await _context.Categories.FirstOrDefaultAsync(c => c.Id == inDTO.CategoryId)
+                        ?? throw new KeyNotFoundException($"The category with the ID: {inDTO.CategoryId} was not found");
+
+                prod.ProductLocations = inDTO.Locations
+                    .Select(locationId => new ProductLocation
                     {
-                        // Updating the count of the ammount in a location.
-                        var existingEntry = await _context.ProductLocations.AsNoTracking()
-                            .FirstOrDefaultAsync(pl => pl.LocationId == locationId && pl.ProductId == product.Id);
+                        LocationId = locationId,
+                        Quantity = 0,
+                        UpdatedAt = DateTime.UtcNow
+                    }).ToList();
 
-                        if (existingEntry == null)
-                        {
-                            // Initial creation of none existing entry in DB.
-                            _context.ProductLocations.Add(new Models.HomeInv.ProductLocation
-                            {
-                                ProductId = product.Id,
-                                LocationId = locationId,
-                                Quantity = 1,
-                                UpdatedAt = DateTime.Now
-                            });
-                        }
+                if (inDTO.Suppliers != null)
+                {
+                    var suppliers = await _context.Suppliers
+                        .Where(s => inDTO.Suppliers.Contains(s.Id))
+                        .ToListAsync();
+
+                    if (suppliers.Count() != inDTO.Suppliers.Count())
+                    {
+                        var foundIds = suppliers.Select(t => t.Id);
+                        var missingIds = inDTO.Suppliers.Where(id => !foundIds.Contains(id));
+
+                        _logger.LogWarning($"[CREATE]: Some suppliers were not found for the new product. Missing Tag IDs: {string.Join(", ", foundIds)}");
                     }
+
+                    prod.Suppliers = suppliers;
                 }
 
-                if (createInDTO.OriginCountries != null)
+                if (inDTO.Tags != null)
                 {
-                    var countryListDB = await _context.Countries.AsNoTracking().ToListAsync();
+                    var tags = await _context.Tags
+                        .Where(t => inDTO.Tags.Contains(t.Id))
+                        .ToListAsync();
 
-                    foreach (var countryId in createInDTO.OriginCountries)
+                    if (tags.Count() != inDTO.Tags.Count())
                     {
-                        var countryDB = countryListDB.FirstOrDefault(c => c.Id == countryId) ?? 
-                            throw new Exception($"Country with id {countryId} not found in database!");
+                        var foundIds = tags.Select(t => t.Id);
+                        var missingIds = inDTO.Tags.Where(id => !foundIds.Contains(id));
 
-                        product.Countries.Add(new Models.HomeInv.Country
-                        {
-                            Id = countryDB.Id,
-                            Name = countryDB.Name
-                        });
+                        _logger.LogWarning($"[CREATE]: Some tags were not found for the new product. Missing Tag IDs: {string.Join(", ", foundIds)}");
                     }
+
+                    prod.Tags = tags;
                 }
 
-                if (createInDTO.Suppliers != null)
+                if (inDTO.OriginCountries != null)
                 {
-                    var supplierListDB = await _context.Suppliers.AsNoTracking().ToListAsync();
+                    var countries = await _context.Countries
+                        .Where(c => inDTO.OriginCountries.Contains(c.Id))
+                        .ToListAsync();
 
-                    foreach (var supplierId in createInDTO.Suppliers)
+                    if (countries.Count() != inDTO.OriginCountries.Count())
                     {
-                        var supplierDB = supplierListDB.FirstOrDefault(s => s.Id == supplierId) ??
-                            throw new Exception($"Supplier with id {supplierId} not found in database");
-                        // If not found - What then to do and how to communicate to the user the upload was successful but some countries were invalid?
+                        var foundIds = countries.Select(t => t.Id);
+                        var missingIds = inDTO.OriginCountries.Where(id => !foundIds.Contains(id));
 
-                        product.Suppliers.Add(new Models.HomeInv.Supplier
-                        {
-                            Id = supplierDB.Id,
-                            Name = supplierDB.Name
-                        });
+                        _logger.LogWarning($"[CREATE]: Some countries were not found for the new product. Missing Tag IDs: {string.Join(", ", foundIds)}");
                     }
-                }
 
-                if (createInDTO.Tags != null)
-                {
-                    var tagListDB = await _context.Tags.AsNoTracking().ToListAsync();
-
-                    foreach (var tagId in createInDTO.Tags)
-                    {
-                        var tagDB = tagListDB.FirstOrDefault(t => t.Id == tagId) ??
-                            throw new Exception($"Tag with id {tagId} not found in database");
-
-                        product.Tags.Add(new Models.HomeInv.Tag
-                        {
-                            Id = tagDB.Id,
-                            Name = tagDB.Name
-                        });
-                    }
+                    prod.Countries = countries;
                 }
 
                 await _context.SaveChangesAsync();
@@ -124,21 +113,23 @@ namespace Infrastructure.Repositories.InventoryManagement
                                 .Include(p => p.Countries)
                                 .Include(p => p.Suppliers)
                                 .Include(p => p.Tags)
-                                .FirstAsync(p => p.Id == entry.Entity.Id);
+                                .FirstAsync(p => p.Id == prod.Id);
 
-                var createOutDto = await SetCreateproductDto(savedProduct);
+                CreateProductOutDTO createOutDto = MapOutDTO(savedProduct);
+
+                _logger.LogInformation($"[CREATE]: Successfully added new product to inventory with ProductId: {createOutDto.ProductId}.");
 
                 return createOutDto;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while adding product to inventory.");
+                _logger.LogError(ex, "Failed to create product {@ProductDto}", inDTO);
                 throw;
             }
         }
 
         // Sets the return product DTO after creation to the outbound DTO.
-        private async Task<CreateProductOutDTO> SetCreateproductDto(Product savedProduct)
+        private CreateProductOutDTO MapOutDTO(Product savedProduct)
         {
             try
             {
@@ -150,93 +141,35 @@ namespace Infrastructure.Repositories.InventoryManagement
                     Brand = savedProduct.Brand,
                     CreatedAt = savedProduct.CreatedAt,
                     UpdatedAt = savedProduct.UpdatedAt,
-                    ImageId = savedProduct.ImageId
-                };
-
-                // Set the category name from category id due to otherwise having to update in database and in API if new categories are added.
-                // This does call the database again, but only once per creation, so should be fine for now.
-                if (savedProduct.CategoryId != null)
-                {
-                    var category = await _context.Categories
-                        .FirstOrDefaultAsync(categories => categories.Id == savedProduct.CategoryId);
-
-                    if (category is null)
+                    ImageId = savedProduct.ImageId,
+                    Category = savedProduct.Category != null ? new ProductCategoryDTO
                     {
-                        throw new Exception($"Invalid category id '{savedProduct.CategoryId}' supplied.");
-                    }
-
-                    createOutDto.Category = category?.Name;
-                }
-
-                if (savedProduct.ProductLocations != null && savedProduct.ProductLocations.Count != 0)
-                {
-                    foreach (var location in savedProduct.ProductLocations)
+                        CategoryId = savedProduct.Category.Id,
+                        CategoryName = savedProduct.Category.Name
+                    } : null,
+                    Locations = savedProduct.ProductLocations != null ? savedProduct.ProductLocations.Select(pl => new ProductLocationDTO
                     {
-                        var pl = new ProductLocationDTO
-                        {
-                            LocationId = location.LocationId,
-                            LocationName = _context?.Locations?.Where(l => l.Id == location.LocationId)
+                        LocationId = pl.LocationId,
+                        LocationName = _context?.Locations?.Where(l => l.Id == pl.LocationId)
                                                              .Select(l => l.Name)
                                                              .FirstOrDefault() ?? throw new Exception("Creation of new product has invalid location set.")
-                        };
-
-                        if (createOutDto.Locations == null)
-                            createOutDto.Locations = new List<ProductLocationDTO>();
-
-                        createOutDto.Locations.Add(pl);
-                    }
-                }
-
-                if (savedProduct.Countries != null && savedProduct.Countries.Count != 0)
-                {
-                    foreach (var country in savedProduct.Countries)
+                    }).ToList() : null,
+                    CountriesOfOrigin = savedProduct.Countries != null ? savedProduct.Countries.Select(c => new ProductCountryDTO
                     {
-                        var pc = new ProductCountryDTO
-                        {
-                            CountryId = country.Id,
-                            CountryName = country.Name
-                        };
-
-                        if (createOutDto.CountriesOfOrigin == null)
-                            createOutDto.CountriesOfOrigin = new List<ProductCountryDTO>();
-
-                        createOutDto.CountriesOfOrigin.Add(pc);
-                    }
-                }
-
-                if (savedProduct.Suppliers != null && savedProduct.Suppliers.Count != 0)
-                {
-                    foreach (var supplier in savedProduct.Suppliers)
+                        CountryId = c.Id,
+                        CountryName = c.Name
+                    }).ToList() : null,
+                    Suppliers = savedProduct.Suppliers != null ? savedProduct.Suppliers.Select(s => new ProductSupplierDTO
                     {
-                        var ps = new ProductSupplierDTO
-                        {
-                            SupplierId = supplier.Id,
-                            SupplierName = supplier.Name
-                        };
-
-                        if (createOutDto.Suppliers == null)
-                            createOutDto.Suppliers = new List<ProductSupplierDTO>();
-
-                        createOutDto.Suppliers.Add(ps);
-                    }
-                }
-
-                if (savedProduct.Tags != null && savedProduct.Tags.Count != 0)
-                {
-                    foreach (var tag in savedProduct.Tags)
+                        SupplierId = s.Id,
+                        SupplierName = s.Name
+                    }).ToList() : null,
+                    Tags = savedProduct.Tags != null ? savedProduct.Tags.Select(t => new ProductTagDTO
                     {
-                        var pt = new ProductTagDTO
-                        {
-                            TagId = tag.Id,
-                            TagName = tag.Name
-                        };
-
-                        if (createOutDto.Tags == null)
-                            createOutDto.Tags = new List<ProductTagDTO>();
-
-                        createOutDto.Tags.Add(pt);
-                    }
-                }
+                        TagId = t.Id,
+                        TagName = t.Name
+                    }).ToList() : null
+                };
 
                 return createOutDto;
             }
@@ -269,7 +202,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                     {
                         ProductName = productNames[rnd.Next(productNames.Count)],
                         CategoryId = categories[rnd.Next(categories.Count)].Id,
-                        EANCode = rnd.Next(111111111, 999999999).ToString(),
+                        Barcode = rnd.Next(111111111, 999999999).ToString(),
                         Brand = brands[rnd.Next(brands.Count)],
                         ImageId = rnd.Next(1, 5),
                         Locations = new List<int> { locations[rnd.Next(locations.Count)].Id },
@@ -280,7 +213,7 @@ namespace Infrastructure.Repositories.InventoryManagement
 
                     productIn.ProductName += rndNumb;
 
-                    await AddProductToInventoryDBAsync(productIn);
+                    await CreateInventoryProductAsync(productIn);
                 }
             }
             catch (Exception ex)

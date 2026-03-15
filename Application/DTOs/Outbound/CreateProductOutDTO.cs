@@ -14,7 +14,7 @@
 
         public DateTime UpdatedAt { get; set; }
 
-        public string? Category { get; set; }
+        public required ProductCategoryDTO Category { get; set; }
 
         public int? ImageId { get; set; }
 

@@ -149,7 +149,7 @@ namespace Infrastructure.Repositories.InventoryManagement
                         CategoryName = product.Category.Name
                     },
 
-                    CountriesOfOrigin = product.Countries == null ? null : product.Countries.Select(c => new ProductCountryDTO
+                    OriginCountries = product.Countries == null ? null : product.Countries.Select(c => new ProductCountryDTO
                     {
                         CountryId = c.Id,
                         CountryName = c.Name

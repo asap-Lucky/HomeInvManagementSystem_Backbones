@@ -17,7 +17,10 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace HomeInvManagementAPI.Controllers
 {
-    // NOTE: Make sure these requests can take both an ean and a product id due to the fact that the ean can be null (apple, banana, pear etc.) dont have an ean code.
+    /// <summary>
+    /// TODO:
+    /// - Make generic wrapper, which wraps the returning values in an error and body wrapping for each call.
+    /// </summary>
     [Route("[controller]/v1")]
     [ApiController]
     public class HomeInvController : Controller
@@ -66,7 +69,7 @@ namespace HomeInvManagementAPI.Controllers
                     Category = outDTO.Category,
                     ImageId = outDTO.ImageId,
                     Locations = outDTO.Locations,
-                    CountriesOfOrigin = outDTO.CountriesOfOrigin,
+                    CountriesOfOrigin = outDTO.OriginCountries,
                     Suppliers = outDTO.Suppliers,
                     Tags = outDTO.Tags
                 };
@@ -115,7 +118,7 @@ namespace HomeInvManagementAPI.Controllers
                     Category = outDTO.Category,
                     ImageId = outDTO.ImageId,
                     Locations = outDTO.Locations,
-                    CountriesOfOrigin = outDTO.CountriesOfOrigin,
+                    CountriesOfOrigin = outDTO.OriginCountries,
                     Suppliers = outDTO.Suppliers,
                     Tags = outDTO.Tags
                 };
@@ -205,37 +208,36 @@ namespace HomeInvManagementAPI.Controllers
 
         [HttpPost]
         [ProducesResponseType<CreateProductResponse>(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<CreateProductResponse>> CreateProductInInventoryAsync([FromBody] CreateProductRequest request)
         {
             try
             {
-                // TODO: Imp base request wrapper later to set some values that are needed later.
-                //BaseRequestWrapper<CreateProductRequest> requestWrapper = new()
-                //{
-                //};
+                // Validation of request parameters.
+                ProductName productName = new(request.ProductName);
+                ProductBarcode? barcode = request.Barcode != null ? new ProductBarcode(request.Barcode) : null;
 
                 CreateProductInDTO inDTO = new()
                 {
-                    ProductName = request.ProductName,
-                    CategoryId = (int)request.Category,
-                    Locations = request.Locations
-                                              .Select(location => location)
-                                              .ToList(),
-                    EANCode = request.EANCode,
+                    ProductName = productName.Value,
+                    CategoryId = request.CategoryId,
+                    Locations = request.Locations,
+                    Barcode = barcode.Value,
                     Brand = request.Brand,
                     OriginCountries = request.OriginCountries,
                     Suppliers = request.Suppliers,
-                    Tags = request.Tags
+                    Tags = request.Tags,
+                    ImageId = request.ImageId
                 };
 
-                var outDTO = await _inventoryCommand.AddProductToInventoryAsync(inDTO);
+                var outDTO = await _inventoryCommand.CreateProduct(inDTO);
 
                 CreateProductResponse response = new()
                 {
                     ProductId = outDTO.ProductId,
                     ProductName = outDTO.ProductName,
-                    EanCode = outDTO.EanCode,
+                    Barcode = outDTO.EanCode,
                     Brand = outDTO.Brand,
                     CreatedAt = outDTO.CreatedAt,
                     UpdatedAt = outDTO.UpdatedAt,
@@ -248,6 +250,11 @@ namespace HomeInvManagementAPI.Controllers
                 };
 
                 return StatusCode(StatusCodes.Status201Created, response);
+            }
+            catch (DomainRuleViolationException ex)
+            {
+                _logger.LogError(ex, "Domain rule violation occurred while fetching products from inventory.");
+                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
             }
             catch (Exception ex)
             {
